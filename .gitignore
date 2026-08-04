@@ -1,0 +1,4 @@
+*.deb
+*.tar.gz
+*.tar.xz
+.DS_Store

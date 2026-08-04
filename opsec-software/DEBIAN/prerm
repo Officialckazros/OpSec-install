@@ -1,0 +1,8 @@
+#!/bin/bash
+set -e
+
+rm -f /usr/bin/mullvad-browser
+rm -f /usr/share/applications/mullvad-browser.desktop
+rm -rf /opt/mullvad-browser
+
+exit 0
