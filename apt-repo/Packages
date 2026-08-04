@@ -13,3 +13,11 @@ Maintainer: ckazros <officialckazros@gmail.com>
 Filename: opsec-software_1.0.0_all.deb
 Size: 2180
 Description: Complete OpSec software suite containing Mullvad VPN, Mullvad Browser, and Proton Mail.
+
+Package: opsec-de
+Version: 1.0.0
+Architecture: all
+Maintainer: ckazros <officialckazros@gmail.com>
+Filename: opsec-de_1.0.0_all.deb
+Size: 8306
+Description: OpSec Desktop Environment (opsecDE) privacy desktop environment and control center.

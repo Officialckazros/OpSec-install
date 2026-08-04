@@ -1,6 +1,6 @@
-# OpSec Install & opsecOS
+# OpSec Install, opsecOS & opsecDE
 
-Automated Debian/Ubuntu repository for installing privacy and operational security software via `sudo apt install opsec`, plus `opsecOS` security-focused Linux Live ISO builder.
+Automated Debian/Ubuntu repository for installing privacy and operational security software via `sudo apt install opsec`, featuring `opsecOS` security Linux distribution and `opsecDE` (OpSec Desktop Environment).
 
 ## Included Software Suite
 
@@ -8,13 +8,13 @@ Automated Debian/Ubuntu repository for installing privacy and operational securi
 - **Mullvad Browser**: Privacy-focused web browser binary, system integration, and `.desktop` shortcut.
 - **Proton Mail**: Desktop client for Proton Mail.
 
-## opsecOS Distribution & Security Features
+## opsecDE (OpSec Desktop Environment)
 
-`opsecOS` is a security-hardened Linux OS image pre-loaded with the OpSec software suite:
+`opsecDE` is a custom Linux Desktop Environment designed specifically for operational security:
 
-- **Kernel Hardening**: ASLR level 2, `kptr_restrict=2`, `dmesg_restrict=1`, `yama.ptrace_scope=2`, TCP SYN cookie protection, ICMP redirect rejection, and filesystem link protection (`/etc/sysctl.d/99-opsec-security.conf`).
-- **Firewall & Privacy**: Default-deny incoming firewall policy (UFW/iptables), DNS leak protection, and automated boot-time MAC address spoofing (`macchanger`).
-- **Desktop Environment**: Lightweight XFCE desktop environment pre-configured with OpSec dark theme and desktop shortcuts.
+- **opsec-session**: Custom X11 session launcher registered in `/usr/share/xsessions/opsecde.desktop`.
+- **opsec-panel**: Top desktop status bar featuring real-time Mullvad VPN indicator, strict firewall shield indicator, launcher shortcuts, and resource monitor.
+- **opsec-control-center**: Graphical security control dashboard for managing VPN connections, randomizing MAC addresses, and enforcing strict lockdown rules.
 
 ---
 
@@ -26,23 +26,18 @@ Automated Debian/Ubuntu repository for installing privacy and operational securi
 curl -fsSL https://raw.githubusercontent.com/Officialckazros/OpSec-install/main/install.sh | sudo bash
 ```
 
-### Register Repository for `sudo apt install opsec`
+### Install opsecDE Desktop Environment via APT
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Officialckazros/OpSec-install/main/add-repo.sh | sudo bash
-```
-
-Then install anytime via standard `apt`:
-
-```bash
-sudo apt install opsec
+sudo apt install opsec-de
 ```
 
 ---
 
 ## Building opsecOS Live ISO
 
-To build the bootable `opsecOS-1.0.0-amd64.iso` image:
+To build the bootable `opsecOS-1.0.0-amd64.iso` image containing `opsecDE`:
 
 ```bash
 make iso

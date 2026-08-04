@@ -10,7 +10,8 @@ mkdir -p "${APT_REPO_DIR}"
 
 chmod 755 "${SCRIPT_DIR}/opsec/DEBIAN/postinst" "${SCRIPT_DIR}/opsec/DEBIAN/prerm" "${SCRIPT_DIR}/opsec/usr/bin/opsec" 2>/dev/null || true
 chmod 755 "${SCRIPT_DIR}/opsec-software/DEBIAN/postinst" "${SCRIPT_DIR}/opsec-software/DEBIAN/prerm" "${SCRIPT_DIR}/opsec-software/usr/bin/opsec-software" 2>/dev/null || true
-chmod 755 "${SCRIPT_DIR}/add-repo.sh" "${SCRIPT_DIR}/install.sh" "${SCRIPT_DIR}/setup.sh" 2>/dev/null || true
+chmod 755 "${SCRIPT_DIR}/opsec-de/DEBIAN/postinst" "${SCRIPT_DIR}/opsec-de/DEBIAN/prerm" "${SCRIPT_DIR}/opsec-de/usr/bin/"* 2>/dev/null || true
+chmod 755 "${SCRIPT_DIR}/add-repo.sh" "${SCRIPT_DIR}/install.sh" "${SCRIPT_DIR}/setup.sh" "${SCRIPT_DIR}/iso-builder/build-iso.sh" 2>/dev/null || true
 
 python3 -c '
 import os, sys, tarfile, io
@@ -82,10 +83,12 @@ apt_repo_dir = os.environ["APT_REPO_DIR"]
 
 build_deb(os.path.join(script_dir, "opsec"), os.path.join(apt_repo_dir, "opsec_1.0.0_all.deb"))
 build_deb(os.path.join(script_dir, "opsec-software"), os.path.join(apt_repo_dir, "opsec-software_1.0.0_all.deb"))
+build_deb(os.path.join(script_dir, "opsec-de"), os.path.join(apt_repo_dir, "opsec-de_1.0.0_all.deb"))
 '
 
 OPSEC_SIZE=$(stat -f%z "${APT_REPO_DIR}/opsec_1.0.0_all.deb" 2>/dev/null || stat -c%s "${APT_REPO_DIR}/opsec_1.0.0_all.deb" 2>/dev/null || echo "2048")
 OPSEC_SW_SIZE=$(stat -f%z "${APT_REPO_DIR}/opsec-software_1.0.0_all.deb" 2>/dev/null || stat -c%s "${APT_REPO_DIR}/opsec-software_1.0.0_all.deb" 2>/dev/null || echo "2048")
+OPSEC_DE_SIZE=$(stat -f%z "${APT_REPO_DIR}/opsec-de_1.0.0_all.deb" 2>/dev/null || stat -c%s "${APT_REPO_DIR}/opsec-de_1.0.0_all.deb" 2>/dev/null || echo "4096")
 
 cat <<EOF > "${APT_REPO_DIR}/Packages"
 Package: opsec
@@ -103,6 +106,14 @@ Maintainer: ckazros <officialckazros@gmail.com>
 Filename: opsec-software_1.0.0_all.deb
 Size: ${OPSEC_SW_SIZE}
 Description: Complete OpSec software suite containing Mullvad VPN, Mullvad Browser, and Proton Mail.
+
+Package: opsec-de
+Version: 1.0.0
+Architecture: all
+Maintainer: ckazros <officialckazros@gmail.com>
+Filename: opsec-de_1.0.0_all.deb
+Size: ${OPSEC_DE_SIZE}
+Description: OpSec Desktop Environment (opsecDE) privacy desktop environment and control center.
 EOF
 
 gzip -9c "${APT_REPO_DIR}/Packages" > "${APT_REPO_DIR}/Packages.gz"

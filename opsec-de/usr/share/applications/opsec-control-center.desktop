@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=OpSec Control Center
+Comment=Manage VPN, firewall, and privacy security settings
+Exec=/usr/bin/opsec-control-center
+Icon=security-high
+Terminal=false
+Categories=Settings;System;Security;

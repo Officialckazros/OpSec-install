@@ -2,4 +2,6 @@
 *.iso
 *.tar.gz
 *.tar.xz
+__pycache__/
+*.pyc
 .DS_Store

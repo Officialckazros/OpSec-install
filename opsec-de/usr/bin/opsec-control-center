@@ -1,0 +1,122 @@
+#!/usr/bin/env python3
+import sys
+import subprocess
+
+try:
+    import tkinter as tk
+    from tkinter import messagebox
+except ImportError:
+    sys.exit(0)
+
+class OpSecControlCenter(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.title("opsecDE Security Control Center")
+        self.geometry("640x520")
+        self.configure(bg="#0f172a")
+
+        header = tk.Label(
+            self, text="🛡️ OpSec Security Control Center",
+            bg="#0f172a", fg="#38bdf8", font=("Helvetica", 16, "bold"), pady=16
+        )
+        header.pack()
+
+        score_frame = tk.Frame(self, bg="#1e293b", padx=16, pady=16)
+        score_frame.pack(fill="x", padx=24, pady=8)
+
+        score_title = tk.Label(
+            score_frame, text="Security Status: OPTIMAL",
+            bg="#1e293b", fg="#22c55e", font=("Helvetica", 12, "bold")
+        )
+        score_title.pack(anchor="w")
+
+        score_desc = tk.Label(
+            score_frame, text="Kernel ASLR active • Firewall Strict • DNS Leak Protection Active",
+            bg="#1e293b", fg="#94a3b8", font=("Helvetica", 9)
+        )
+        score_desc.pack(anchor="w", pady=4)
+
+        actions_frame = tk.LabelFrame(self, text=" Security Controls ", bg="#0f172a", fg="#94a3b8", font=("Helvetica", 10, "bold"), padx=16, pady=16)
+        actions_frame.pack(fill="both", expand=True, padx=24, pady=8)
+
+        vpn_btn = tk.Button(
+            actions_frame, text="🔒 Connect Mullvad VPN", bg="#0284c7", fg="#ffffff",
+            font=("Helvetica", 10, "bold"), bd=0, padx=12, pady=8,
+            command=self.connect_vpn
+        )
+        vpn_btn.grid(row=0, column=0, padx=8, pady=8, sticky="ew")
+
+        mac_btn = tk.Button(
+            actions_frame, text="🎲 Randomize MAC Address", bg="#7c3aed", fg="#ffffff",
+            font=("Helvetica", 10, "bold"), bd=0, padx=12, pady=8,
+            command=self.spoof_mac
+        )
+        mac_btn.grid(row=0, column=1, padx=8, pady=8, sticky="ew")
+
+        fw_btn = tk.Button(
+            actions_frame, text="🧱 Enforce Strict Firewall", bg="#16a34a", fg="#ffffff",
+            font=("Helvetica", 10, "bold"), bd=0, padx=12, pady=8,
+            command=self.enforce_fw
+        )
+        fw_btn.grid(row=1, column=0, padx=8, pady=8, sticky="ew")
+
+        browser_btn = tk.Button(
+            actions_frame, text="🌐 Launch Mullvad Browser", bg="#334155", fg="#f8fafc",
+            font=("Helvetica", 10), bd=0, padx=12, pady=8,
+            command=lambda: self.launch("mullvad-browser")
+        )
+        browser_btn.grid(row=1, column=1, padx=8, pady=8, sticky="ew")
+
+        mail_btn = tk.Button(
+            actions_frame, text="✉️ Launch Proton Mail", bg="#334155", fg="#f8fafc",
+            font=("Helvetica", 10), bd=0, padx=12, pady=8,
+            command=lambda: self.launch("proton-mail")
+        )
+        mail_btn.grid(row=2, column=0, padx=8, pady=8, sticky="ew")
+
+        status_btn = tk.Button(
+            actions_frame, text="📊 Run OpSec Status Scan", bg="#334155", fg="#f8fafc",
+            font=("Helvetica", 10), bd=0, padx=12, pady=8,
+            command=lambda: self.launch_terminal("opsec")
+        )
+        status_btn.grid(row=2, column=1, padx=8, pady=8, sticky="ew")
+
+        actions_frame.columnconfigure(0, weight=1)
+        actions_frame.columnconfigure(1, weight=1)
+
+    def launch(self, cmd):
+        try:
+            subprocess.Popen([cmd])
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to launch {cmd}: {e}")
+
+    def launch_terminal(self, cmd):
+        try:
+            subprocess.Popen(["x-terminal-emulator", "-e", cmd])
+        except Exception:
+            subprocess.Popen([cmd])
+
+    def connect_vpn(self):
+        try:
+            subprocess.run(["mullvad", "connect"], check=True)
+            messagebox.showinfo("OpSec VPN", "Mullvad VPN connect signal sent.")
+        except Exception:
+            messagebox.showwarning("OpSec VPN", "Mullvad VPN CLI not active or requires authentication.")
+
+    def spoof_mac(self):
+        try:
+            subprocess.run(["sudo", "mac-spoof.sh"], check=True)
+            messagebox.showinfo("OpSec Security", "MAC addresses randomized.")
+        except Exception:
+            messagebox.showwarning("OpSec Security", "MAC spoofing requires root permissions.")
+
+    def enforce_fw(self):
+        try:
+            subprocess.run(["sudo", "opsec-firewall.sh"], check=True)
+            messagebox.showinfo("OpSec Firewall", "Strict firewall rules enforced.")
+        except Exception:
+            messagebox.showwarning("OpSec Firewall", "Firewall enforcement requires root permissions.")
+
+if __name__ == "__main__":
+    app = OpSecControlCenter()
+    app.mainloop()

@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=opsecDE
+Comment=OpSec Privacy Desktop Environment
+Exec=/usr/bin/opsec-session
+Type=Application
+DesktopNames=opsecDE

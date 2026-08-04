@@ -1,0 +1,105 @@
+#!/usr/bin/env python3
+import sys
+import subprocess
+import time
+
+try:
+    import tkinter as tk
+except ImportError:
+    sys.exit(0)
+
+class OpSecPanel(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.title("opsecDE Panel")
+        screen_w = self.winfo_screenwidth()
+        self.geometry(f"{screen_w}x32+0+0")
+        self.overrideredirect(True)
+        self.configure(bg="#0f172a")
+
+        self.attributes("-topmost", True)
+
+        left_frame = tk.Frame(self, bg="#0f172a")
+        left_frame.pack(side="left", padx=8)
+
+        menu_btn = tk.Button(
+            left_frame, text="🛡️ opsecDE", bg="#1e293b", fg="#38bdf8",
+            font=("Helvetica", 10, "bold"), bd=0, padx=8, pady=2,
+            command=self.open_menu
+        )
+        menu_btn.pack(side="left", padx=4)
+
+        browser_btn = tk.Button(
+            left_frame, text="🌐 Mullvad Browser", bg="#1e293b", fg="#f1f5f9",
+            font=("Helvetica", 9), bd=0, padx=6, pady=2,
+            command=lambda: self.launch("mullvad-browser")
+        )
+        browser_btn.pack(side="left", padx=4)
+
+        mail_btn = tk.Button(
+            left_frame, text="✉️ Proton Mail", bg="#1e293b", fg="#f1f5f9",
+            font=("Helvetica", 9), bd=0, padx=6, pady=2,
+            command=lambda: self.launch("proton-mail")
+        )
+        mail_btn.pack(side="left", padx=4)
+
+        ctrl_btn = tk.Button(
+            left_frame, text="⚙️ Control Center", bg="#1e293b", fg="#a855f7",
+            font=("Helvetica", 9, "bold"), bd=0, padx=6, pady=2,
+            command=lambda: self.launch("opsec-control-center")
+        )
+        ctrl_btn.pack(side="left", padx=4)
+
+        right_frame = tk.Frame(self, bg="#0f172a")
+        right_frame.pack(side="right", padx=12)
+
+        self.vpn_lbl = tk.Label(
+            right_frame, text="[VPN: CHECKING]", bg="#1e293b", fg="#e2e8f0",
+            font=("Monospace", 9, "bold"), padx=6
+        )
+        self.vpn_lbl.pack(side="left", padx=4)
+
+        self.fw_lbl = tk.Label(
+            right_frame, text="[FW: STRICT]", bg="#1e293b", fg="#22c55e",
+            font=("Monospace", 9, "bold"), padx=6
+        )
+        self.fw_lbl.pack(side="left", padx=4)
+
+        self.clock_lbl = tk.Label(
+            right_frame, text="", bg="#0f172a", fg="#94a3b8",
+            font=("Monospace", 9)
+        )
+        self.clock_lbl.pack(side="left", padx=8)
+
+        self.update_stats()
+
+    def launch(self, cmd):
+        try:
+            subprocess.Popen([cmd])
+        except Exception:
+            pass
+
+    def open_menu(self):
+        try:
+            subprocess.Popen(["opsec-control-center"])
+        except Exception:
+            pass
+
+    def update_stats(self):
+        now = time.strftime("%H:%M:%S | %Y-%m-%d")
+        self.clock_lbl.config(text=now)
+
+        try:
+            res = subprocess.run(["mullvad", "status"], capture_output=True, text=True, timeout=1)
+            if "Connected" in res.stdout:
+                self.vpn_lbl.config(text="[VPN: CONNECTED]", fg="#22c55e")
+            else:
+                self.vpn_lbl.config(text="[VPN: DISCONNECTED]", fg="#ef4444")
+        except Exception:
+            self.vpn_lbl.config(text="[VPN: INACTIVE]", fg="#94a3b8")
+
+        self.after(3000, self.update_stats)
+
+if __name__ == "__main__":
+    app = OpSecPanel()
+    app.mainloop()

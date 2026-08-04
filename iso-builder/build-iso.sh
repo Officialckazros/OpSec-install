@@ -7,7 +7,7 @@ OUTPUT_ISO="${ROOT_DIR}/opsecOS-1.0.0-amd64.iso"
 export ROOT_DIR
 export OUTPUT_ISO
 
-chmod +x "${ROOT_DIR}/opsec-os/security/"*.sh "${ROOT_DIR}/opsec-os/desktop/"*.sh 2>/dev/null || true
+chmod +x "${ROOT_DIR}/opsec-os/security/"*.sh "${ROOT_DIR}/opsec-os/desktop/"*.sh "${ROOT_DIR}/opsec-de/usr/bin/"* 2>/dev/null || true
 
 python3 -c '
 import os, sys, struct, tarfile, io, gzip
@@ -19,12 +19,13 @@ iso_dir = os.path.join(root_dir, "build_tmp_iso")
 os.makedirs(os.path.join(iso_dir, "live"), exist_ok=True)
 os.makedirs(os.path.join(iso_dir, "boot", "grub"), exist_ok=True)
 os.makedirs(os.path.join(iso_dir, "opsec"), exist_ok=True)
+os.makedirs(os.path.join(iso_dir, "opsec-de"), exist_ok=True)
 
 grub_cfg = """set default="0"
 set timeout=5
 
-menuentry "opsecOS 1.0.0 Live (Security Hardened)" {
-    linux /live/vmlinuz boot=live quiet splash opsec.hardened=1
+menuentry "opsecOS 1.0.0 with opsecDE (Security Hardened)" {
+    linux /live/vmlinuz boot=live quiet splash opsec.hardened=1 desktop=opsecDE
     initrd /live/initrd.img
 }
 
@@ -37,9 +38,9 @@ menuentry "opsecOS 1.0.0 Live (Failsafe Mode)" {
 with open(os.path.join(iso_dir, "boot", "grub", "grub.cfg"), "w") as f:
     f.write(grub_cfg)
 
-squashfs_data = b"opsecOS_squashfs_payload_v1.0.0_security_hardened\n"
+squashfs_data = b"opsecOS_opsecDE_squashfs_payload_v1.0.0_security_hardened\n"
 with open(os.path.join(iso_dir, "live", "filesystem.squashfs"), "wb") as f:
-    f.write(squashfs_data * 100)
+    f.write(squashfs_data * 120)
 
 with open(os.path.join(iso_dir, "live", "vmlinuz"), "wb") as f:
     f.write(b"opsecOS_linux_kernel_image\n" * 50)
@@ -48,7 +49,8 @@ with open(os.path.join(iso_dir, "live", "initrd.img"), "wb") as f:
     f.write(b"opsecOS_initramfs_image\n" * 50)
 
 opsec_info = """opsecOS Version: 1.0.0
-Architecture: amd64
+Desktop Environment: opsecDE (OpSec Desktop Environment)
+Components: opsec-session, opsec-panel, opsec-control-center
 Security Suite: Mullvad VPN, Mullvad Browser, Proton Mail, AppArmor, UFW, MAC-Spoof
 Hardening: sysctl 99-opsec-security.conf
 """
@@ -62,7 +64,7 @@ with open(output_iso, "wb") as f:
     pvd[0] = 1
     pvd[1:6] = b"CD001"
     pvd[6] = 1
-    pvd[8:40] = b"opsecOS_1_0_0_AMD64".ljust(32, b" ")
+    pvd[8:40] = b"OPSECOS_OPSECDE_AMD64".ljust(32, b" ")
     pvd[40:72] = b"OPSECOS_SECURITY_LINUX".ljust(32, b" ")
     pvd[72:80] = struct.pack("<I", 2048) + struct.pack(">I", 2048)
     pvd[120:124] = struct.pack("<H", 1) + struct.pack(">H", 1)

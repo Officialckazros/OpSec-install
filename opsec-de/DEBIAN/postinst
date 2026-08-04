@@ -1,0 +1,7 @@
+#!/bin/bash
+set -e
+
+chmod +x /usr/bin/opsec-session /usr/bin/opsec-panel /usr/bin/opsec-control-center 2>/dev/null || true
+chmod 644 /usr/share/xsessions/opsecde.desktop 2>/dev/null || true
+
+exit 0
