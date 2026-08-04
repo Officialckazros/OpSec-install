@@ -28,11 +28,13 @@ jobs:
           chmod +x build-repo.sh
           ./build-repo.sh
 
-      - name: Build opsecOS ISO
+      - name: Create build script
         run: |
-          sudo bash << 'BUILDSCRIPT'
+          cat > /tmp/build-opsec-iso.sh << 'SCRIPT'
+          #!/bin/bash
           set -e
 
+          SRC_DIR="$1"
           WORK="/tmp/opsec-live"
           rm -rf "$WORK"
           mkdir -p "$WORK"
@@ -102,16 +104,16 @@ jobs:
           sed -i 's/^[[:space:]]*//' config/package-lists/opsec.list.chroot
 
           mkdir -p config/packages.chroot
-          cp $GITHUB_WORKSPACE/apt-repo/opsec_1.0.0_all.deb config/packages.chroot/
-          cp $GITHUB_WORKSPACE/apt-repo/opsec-software_1.0.0_all.deb config/packages.chroot/
-          cp $GITHUB_WORKSPACE/apt-repo/opsec-de_1.0.0_all.deb config/packages.chroot/
+          cp "${SRC_DIR}/apt-repo/opsec_1.0.0_all.deb" config/packages.chroot/
+          cp "${SRC_DIR}/apt-repo/opsec-software_1.0.0_all.deb" config/packages.chroot/
+          cp "${SRC_DIR}/apt-repo/opsec-de_1.0.0_all.deb" config/packages.chroot/
 
           mkdir -p config/includes.chroot/etc/sysctl.d
-          cp $GITHUB_WORKSPACE/opsec-os/security/99-opsec-security.conf config/includes.chroot/etc/sysctl.d/
+          cp "${SRC_DIR}/opsec-os/security/99-opsec-security.conf" config/includes.chroot/etc/sysctl.d/
 
           mkdir -p config/includes.chroot/usr/local/sbin
-          cp $GITHUB_WORKSPACE/opsec-os/security/opsec-firewall.sh config/includes.chroot/usr/local/sbin/
-          cp $GITHUB_WORKSPACE/opsec-os/security/mac-spoof.sh config/includes.chroot/usr/local/sbin/
+          cp "${SRC_DIR}/opsec-os/security/opsec-firewall.sh" config/includes.chroot/usr/local/sbin/
+          cp "${SRC_DIR}/opsec-os/security/mac-spoof.sh" config/includes.chroot/usr/local/sbin/
           chmod +x config/includes.chroot/usr/local/sbin/*.sh
 
           mkdir -p config/includes.chroot/etc/lightdm/lightdm.conf.d
@@ -180,7 +182,11 @@ jobs:
 
           ls -lh *.iso
           file *.iso
-          BUILDSCRIPT
+          SCRIPT
+          chmod +x /tmp/build-opsec-iso.sh
+
+      - name: Build opsecOS ISO
+        run: sudo /tmp/build-opsec-iso.sh "${GITHUB_WORKSPACE}"
 
       - name: Prepare ISO for release
         run: |
