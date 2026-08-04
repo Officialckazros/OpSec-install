@@ -1,21 +1,23 @@
-PACKAGE = opsec-software
+PACKAGE = opsec
 VERSION = 1.0.0
 ARCH = all
 DEB = $(PACKAGE)_$(VERSION)_$(ARCH).deb
 
-all: build
+all: build-repo
 
 build:
-	chmod +x opsec-software/DEBIAN/postinst opsec-software/DEBIAN/prerm opsec-software/usr/bin/opsec-software setup.sh install.sh
-	dpkg-deb --build opsec-software $(DEB)
+	chmod +x opsec/DEBIAN/postinst opsec/DEBIAN/prerm opsec/usr/bin/opsec opsec-software/DEBIAN/postinst opsec-software/DEBIAN/prerm opsec-software/usr/bin/opsec-software setup.sh install.sh add-repo.sh build-repo.sh
+	./build-repo.sh
 
-install-repo: build
+build-repo: build
+
+install-repo: build-repo
 	./setup.sh
 
-install: build
+install: build-repo
 	./install.sh
 
 clean:
-	rm -f *.deb
+	rm -rf apt-repo *.deb
 
-.PHONY: all build install-repo install clean
+.PHONY: all build build-repo install-repo install clean

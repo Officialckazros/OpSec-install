@@ -1,6 +1,6 @@
 # OpSec Install
 
-Automated Debian/Ubuntu packaging repository for installing privacy and operational security software via `sudo apt install opsec-software`.
+Automated Debian/Ubuntu repository for installing privacy and operational security software via `sudo apt install opsec`.
 
 ## Included Software
 
@@ -8,27 +8,41 @@ Automated Debian/Ubuntu packaging repository for installing privacy and operatio
 - **Mullvad Browser**: Privacy-focused web browser binary, system integration, and `.desktop` shortcut.
 - **Proton Mail**: Desktop client for Proton Mail.
 
-## Installation
+## Direct Installation (Without Git Clone)
 
-### Quick Setup
+### One-Line Automated Installation
 
-Clone the repository and run the setup script:
+To install `opsec` directly in a single command without cloning:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Officialckazros/OpSec-install/main/install.sh | sudo bash
+```
+
+### Register Repository for `sudo apt install opsec`
+
+To add the online APT repository so `sudo apt install opsec` works natively in your terminal:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Officialckazros/OpSec-install/main/add-repo.sh | sudo bash
+```
+
+Then install anytime via standard `apt`:
+
+```bash
+sudo apt install opsec
+```
+
+*(Note: `sudo apt install opsec-software` is also supported as an alias package).*
+
+---
+
+## Installation via Git Clone
+
+If you cloned the repository locally:
 
 ```bash
 git clone https://github.com/Officialckazros/OpSec-install.git
 cd OpSec-install
-sudo ./setup.sh
-```
-
-After running `setup.sh`, install the suite using standard `apt`:
-
-```bash
-sudo apt install opsec-software
-```
-
-Alternatively, to build, configure the repository, and install in a single step:
-
-```bash
 sudo ./install.sh
 ```
 
@@ -37,14 +51,13 @@ sudo ./install.sh
 After installation, verify installed tools using the included CLI utility:
 
 ```bash
-opsec-software
+opsec
 ```
 
-## Building Manually
+## Building Repository
 
-To manually build the `.deb` package:
+To rebuild `.deb` packages and the APT index:
 
 ```bash
 make build
 ```
-

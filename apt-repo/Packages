@@ -1,0 +1,15 @@
+Package: opsec
+Version: 1.0.0
+Architecture: all
+Maintainer: ckazros <officialckazros@gmail.com>
+Filename: opsec_1.0.0_all.deb
+Size: 2144
+Description: Complete OpSec suite containing Mullvad VPN, Mullvad Browser, and Proton Mail.
+
+Package: opsec-software
+Version: 1.0.0
+Architecture: all
+Maintainer: ckazros <officialckazros@gmail.com>
+Filename: opsec-software_1.0.0_all.deb
+Size: 2180
+Description: Complete OpSec software suite containing Mullvad VPN, Mullvad Browser, and Proton Mail.
