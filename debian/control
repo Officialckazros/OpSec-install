@@ -1,0 +1,13 @@
+Source: opsec
+Section: utils
+Priority: optional
+Maintainer: ckazros <officialckazros@gmail.com>
+Build-Depends: debhelper-compat (= 13)
+Standards-Version: 4.6.2
+Homepage: https://github.com/Officialckazros/OpSec-install
+
+Package: opsec
+Architecture: all
+Depends: ${misc:Depends}, curl, wget, gnupg, apt-transport-https, ca-certificates, lsb-release, xz-utils, desktop-file-utils
+Description: Complete OpSec suite containing Mullvad VPN, Mullvad Browser, and Proton Mail
+ Meta-package that installs and configures privacy and operational security software on Debian/Ubuntu systems.

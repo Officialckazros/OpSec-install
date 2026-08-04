@@ -1,0 +1,7 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: opsec
+Source: https://github.com/Officialckazros/OpSec-install
+
+Files: *
+Copyright: 2026 ckazros <officialckazros@gmail.com>
+License: MIT

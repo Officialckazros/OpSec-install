@@ -1,0 +1,61 @@
+#!/bin/bash
+set -e
+
+export DEBIAN_FRONTEND=noninteractive
+
+mkdir -p /usr/share/keyrings /etc/apt/sources.list.d
+
+if command -v curl >/dev/null 2>&1; then
+    FETCH_CMD="curl -fsSL"
+else
+    FETCH_CMD="wget -qO-"
+fi
+
+$FETCH_CMD https://repository.mullvad.net/deb/mullvad-keyring.asc | gpg --dearmor --yes -o /usr/share/keyrings/mullvad-keyring.gpg
+ARCH=$(dpkg --print-architecture 2>/dev/null || echo "amd64")
+CODENAME=$(lsb_release -cs 2>/dev/null || echo "stable")
+
+echo "deb [signed-by=/usr/share/keyrings/mullvad-keyring.gpg arch=${ARCH}] https://repository.mullvad.net/deb/stable ${CODENAME} main" > /etc/apt/sources.list.d/mullvad-vpn.list
+
+apt-get update -o Dir::Etc::sourcelist="sources.list.d/mullvad-vpn.list" -o Dir::Etc::sourceparts="-" -o APT::Get::List-Cleanup="0" || apt-get update || true
+apt-get install -y --no-install-recommends mullvad-vpn || true
+
+MULLVAD_BROWSER_DIR="/opt/mullvad-browser"
+mkdir -p "$MULLVAD_BROWSER_DIR"
+
+MB_VERSION=$(curl -s https://api.github.com/repos/mullvad/mullvad-browser/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' || echo "")
+if [ -z "$MB_VERSION" ]; then
+    MB_VERSION="13.5.1"
+fi
+
+MB_URL="https://github.com/mullvad/mullvad-browser/releases/download/${MB_VERSION}/mullvad-browser-linux-x86_64-${MB_VERSION}.tar.xz"
+TMP_MB="/tmp/mullvad-browser.tar.xz"
+
+if curl -sL "$MB_URL" -o "$TMP_MB"; then
+    tar -xJf "$TMP_MB" -C /opt/ || true
+    rm -f "$TMP_MB"
+    if [ -d "/opt/mullvad-browser" ]; then
+        ln -sf /opt/mullvad-browser/start-mullvad-browser /usr/bin/mullvad-browser
+        ln -sf /opt/mullvad-browser/start-mullvad-browser /usr/bin/opsec-browser
+        cat <<EOF > /usr/share/applications/mullvad-browser.desktop
+[Desktop Entry]
+Type=Application
+Name=Mullvad Browser
+Comment=Privacy-focused web browser
+Exec=/usr/bin/mullvad-browser %U
+Icon=/opt/mullvad-browser/browser/chrome/icons/default/default128.png
+Terminal=false
+Categories=Network;WebBrowser;Security;
+EOF
+    fi
+fi
+
+TMP_PROTON="/tmp/proton-mail.deb"
+PROTON_URL="https://proton.me/download/mail/linux/ProtonMail-desktop-beta.deb"
+
+if curl -sL "$PROTON_URL" -o "$TMP_PROTON"; then
+    dpkg -i "$TMP_PROTON" || apt-get install -f -y || true
+    rm -f "$TMP_PROTON"
+fi
+
+exit 0
