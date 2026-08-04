@@ -28,14 +28,27 @@ jobs:
           chmod +x build-repo.sh
           ./build-repo.sh
 
-      - name: Prepare live-build workspace
+      - name: Build opsecOS ISO
         run: |
-          mkdir -p /tmp/opsec-live
-          cd /tmp/opsec-live
+          sudo bash << 'BUILDSCRIPT'
+          set -e
 
-          sudo lb config \
+          WORK="/tmp/opsec-live"
+          rm -rf "$WORK"
+          mkdir -p "$WORK"
+          cd "$WORK"
+
+          lb config \
+            --mode debian \
             --architecture amd64 \
             --distribution bookworm \
+            --parent-distribution bookworm \
+            --parent-mirror-bootstrap http://deb.debian.org/debian \
+            --parent-mirror-chroot http://deb.debian.org/debian \
+            --parent-mirror-binary http://deb.debian.org/debian \
+            --mirror-bootstrap http://deb.debian.org/debian \
+            --mirror-chroot http://deb.debian.org/debian \
+            --mirror-binary http://deb.debian.org/debian \
             --archive-areas "main contrib non-free non-free-firmware" \
             --binary-images iso-hybrid \
             --bootloader syslinux \
@@ -47,7 +60,6 @@ jobs:
             --apt-indices false \
             --cache false
 
-          mkdir -p config/package-lists
           cat > config/package-lists/opsec.list.chroot << 'PKGEOF'
           linux-image-amd64
           live-boot
@@ -115,22 +127,13 @@ jobs:
           cat > config/hooks/normal/0500-opsec-setup.hook.chroot << 'HOOKEOF'
           #!/bin/bash
           set -e
-
           sysctl --system 2>/dev/null || true
-
-          if [ -f /usr/local/sbin/opsec-firewall.sh ]; then
-              chmod +x /usr/local/sbin/opsec-firewall.sh
-          fi
-
-          if [ -f /usr/local/sbin/mac-spoof.sh ]; then
-              chmod +x /usr/local/sbin/mac-spoof.sh
-          fi
-
+          chmod +x /usr/local/sbin/opsec-firewall.sh 2>/dev/null || true
+          chmod +x /usr/local/sbin/mac-spoof.sh 2>/dev/null || true
           useradd -m -s /bin/bash -G sudo,audio,video,plugdev,netdev,cdrom user 2>/dev/null || true
           echo "user:live" | chpasswd
           echo "user ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/opsec-live
           chmod 440 /etc/sudoers.d/opsec-live
-
           mkdir -p /etc/skel/Desktop
           cat > /etc/skel/Desktop/mullvad-browser.desktop << 'DTEOF'
           [Desktop Entry]
@@ -142,7 +145,6 @@ jobs:
           Categories=Network;WebBrowser;Security;
           DTEOF
           sed -i 's/^[[:space:]]*//' /etc/skel/Desktop/mullvad-browser.desktop
-
           cat > /etc/skel/Desktop/opsec-control-center.desktop << 'DTEOF2'
           [Desktop Entry]
           Type=Application
@@ -153,14 +155,11 @@ jobs:
           Categories=System;Security;
           DTEOF2
           sed -i 's/^[[:space:]]*//' /etc/skel/Desktop/opsec-control-center.desktop
-
           chmod +x /etc/skel/Desktop/*.desktop 2>/dev/null || true
-
           if [ -d /home/user ]; then
               cp -r /etc/skel/Desktop /home/user/Desktop 2>/dev/null || true
               chown -R user:user /home/user 2>/dev/null || true
           fi
-
           cat > /etc/os-release << 'OSEOF'
           PRETTY_NAME="opsecOS 1.0.0"
           NAME="opsecOS"
@@ -171,47 +170,29 @@ jobs:
           HOME_URL="https://github.com/Officialckazros/OpSec-install"
           BUG_REPORT_URL="https://github.com/Officialckazros/OpSec-install/issues"
           OSEOF
-
+          sed -i 's/^[[:space:]]*//' /etc/os-release
           echo "opsecOS 1.0.0" > /etc/opsec-release
           HOOKEOF
+          sed -i 's/^[[:space:]]*//' config/hooks/normal/0500-opsec-setup.hook.chroot
           chmod +x config/hooks/normal/0500-opsec-setup.hook.chroot
 
-          mkdir -p config/bootloaders/grub-pc
-          cat > config/bootloaders/grub-pc/grub.cfg << 'GRUBEOF'
-          set default=0
-          set timeout=5
+          lb build
 
-          menuentry "opsecOS 1.0.0 with opsecDE" {
-              linux /live/vmlinuz boot=live components quiet splash
-              initrd /live/initrd.img
-          }
-
-          menuentry "opsecOS 1.0.0 (Failsafe)" {
-              linux /live/vmlinuz boot=live components nomodeset
-              initrd /live/initrd.img
-          }
-
-          menuentry "opsecOS 1.0.0 (RAM Mode)" {
-              linux /live/vmlinuz boot=live components toram quiet splash
-              initrd /live/initrd.img
-          }
-          GRUBEOF
-
-      - name: Build ISO
-        run: |
-          cd /tmp/opsec-live
-          sudo lb build 2>&1 | tail -100
-
-      - name: Verify and rename ISO
-        run: |
-          cd /tmp/opsec-live
           ls -lh *.iso
           file *.iso
-          ISO_FILE=$(ls *.iso | head -1)
-          if [ "$ISO_FILE" != "opsecOS-1.0.0-amd64.iso" ]; then
-            mv "$ISO_FILE" opsecOS-1.0.0-amd64.iso
+          BUILDSCRIPT
+
+      - name: Prepare ISO for release
+        run: |
+          cd /tmp/opsec-live
+          ISO_FILE=$(ls *.iso 2>/dev/null | head -1)
+          if [ -z "$ISO_FILE" ]; then
+            echo "ERROR: No ISO file found"
+            exit 1
           fi
-          echo "ISO_SIZE=$(du -h opsecOS-1.0.0-amd64.iso | cut -f1)" >> $GITHUB_ENV
+          sudo mv "$ISO_FILE" opsecOS-1.0.0-amd64.iso 2>/dev/null || true
+          sudo chmod 644 opsecOS-1.0.0-amd64.iso
+          echo "ISO_SIZE=$(du -h /tmp/opsec-live/opsecOS-1.0.0-amd64.iso | cut -f1)" >> $GITHUB_ENV
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
