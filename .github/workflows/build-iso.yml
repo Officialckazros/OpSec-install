@@ -38,13 +38,12 @@ jobs:
             --distribution bookworm \
             --archive-areas "main contrib non-free non-free-firmware" \
             --binary-images iso-hybrid \
-            --bootloaders "grub-efi,syslinux" \
+            --bootloader syslinux \
             --debian-installer none \
             --memtest none \
             --iso-application "opsecOS" \
             --iso-publisher "ckazros" \
-            --iso-volume "opsecOS 1.0.0" \
-            --image-name "opsecOS-1.0.0-amd64" \
+            --iso-volume "opsecOS-1.0.0" \
             --apt-indices false \
             --cache false
 
