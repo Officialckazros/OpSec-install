@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set +e
 
 export DEBIAN_FRONTEND=noninteractive
 
@@ -13,17 +13,63 @@ fi
 
 $FETCH_CMD https://repository.mullvad.net/deb/mullvad-keyring.asc | gpg --dearmor --yes -o /usr/share/keyrings/mullvad-keyring.gpg
 ARCH=$(dpkg --print-architecture 2>/dev/null || echo "amd64")
-CODENAME=$(lsb_release -cs 2>/dev/null || echo "stable")
+DETECTED_CODENAME=$(lsb_release -cs 2>/dev/null || echo "stable")
+
+# Mullvad's APT repo only ships indices for a fixed set of codenames. Using an
+# unsupported/newer codename (e.g. a distro release Mullvad hasn't added yet)
+# causes a 404 on Release, which apt then treats as fatal for that source.
+# Fall back to the generic "stable" suite, which Mullvad always publishes.
+case "$DETECTED_CODENAME" in
+    bookworm|focal|jammy|noble|plucky|sid|trixie|stable|testing)
+        CODENAME="$DETECTED_CODENAME"
+        ;;
+    *)
+        CODENAME="stable"
+        ;;
+esac
 
 echo "deb [signed-by=/usr/share/keyrings/mullvad-keyring.gpg arch=${ARCH}] https://repository.mullvad.net/deb/stable ${CODENAME} main" > /etc/apt/sources.list.d/mullvad-vpn.list
 
-apt-get update -o Dir::Etc::sourcelist="sources.list.d/mullvad-vpn.list" -o Dir::Etc::sourceparts="-" -o APT::Get::List-Cleanup="0" || apt-get update || true
-apt-get install -y --no-install-recommends mullvad-vpn || true
+# NOTE: postinst runs while dpkg/apt already hold the dpkg lock for this very
+# transaction, so calling `apt-get install` synchronously here would try to
+# re-acquire a lock this process's own parent is holding and would fail or
+# race with it. Defer the actual mullvad-vpn install to a detached background
+# job that waits for the lock to free up, using whichever mechanism is
+# available (systemd-run when a real systemd is running, else a plain
+# nohup/setsid background job so this also works in containers/minimal
+# systems without systemd as PID 1).
+DEFER_CMD='
+    # Give the parent apt-get transaction a moment to fully finish (release
+    # locks, run triggers) before the first attempt.
+    sleep 5
+    for i in $(seq 1 30); do
+        if apt-get update -o Dir::Etc::sourcelist="sources.list.d/mullvad-vpn.list" -o Dir::Etc::sourceparts="-" -o APT::Get::List-Cleanup="0" 2>/tmp/opsec-mullvad-attempt.log \
+            && apt-get install -y --no-install-recommends mullvad-vpn 2>>/tmp/opsec-mullvad-attempt.log; then
+            exit 0
+        fi
+        if grep -qi "lock" /tmp/opsec-mullvad-attempt.log 2>/dev/null; then
+            sleep 5
+            continue
+        fi
+        # Failure was not lock-related (e.g. network/404) - no point retrying fast.
+        break
+    done
+    cat /tmp/opsec-mullvad-attempt.log 2>/dev/null
+    exit 1
+'
+
+if command -v systemd-run >/dev/null 2>&1 && systemd-run --no-block --unit=opsec-install-mullvad-vpn /bin/bash -c "$DEFER_CMD" >/dev/null 2>&1; then
+    echo "Queued background install of mullvad-vpn via systemd (will finish shortly after this transaction completes)."
+else
+    nohup setsid /bin/bash -c "$DEFER_CMD" </dev/null >/var/log/opsec-mullvad-install.log 2>&1 &
+    disown -a
+    echo "Queued background install of mullvad-vpn (log: /var/log/opsec-mullvad-install.log)."
+fi
 
 MULLVAD_BROWSER_DIR="/opt/mullvad-browser"
 mkdir -p "$MULLVAD_BROWSER_DIR"
 
-MB_VERSION=$(curl -s https://api.github.com/repos/mullvad/mullvad-browser/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' || echo "")
+MB_VERSION=$(curl -s https://api.github.com/repos/mullvad/mullvad-browser/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' 2>/dev/null)
 if [ -z "$MB_VERSION" ]; then
     MB_VERSION="13.5.1"
 fi
@@ -32,11 +78,10 @@ MB_URL="https://github.com/mullvad/mullvad-browser/releases/download/${MB_VERSIO
 TMP_MB="/tmp/mullvad-browser.tar.xz"
 
 if curl -sL "$MB_URL" -o "$TMP_MB"; then
-    tar -xJf "$TMP_MB" -C /opt/ || true
+    tar -xJf "$TMP_MB" -C /opt/ 2>/dev/null
     rm -f "$TMP_MB"
     if [ -d "/opt/mullvad-browser" ]; then
         ln -sf /opt/mullvad-browser/start-mullvad-browser /usr/bin/mullvad-browser
-        ln -sf /opt/mullvad-browser/start-mullvad-browser /usr/bin/opsec-browser
         cat <<EOF > /usr/share/applications/mullvad-browser.desktop
 [Desktop Entry]
 Type=Application
@@ -48,14 +93,18 @@ Terminal=false
 Categories=Network;WebBrowser;Security;
 EOF
     fi
+else
+    echo "Warning: could not download Mullvad Browser; skipping." >&2
 fi
 
 TMP_PROTON="/tmp/proton-mail.deb"
 PROTON_URL="https://proton.me/download/mail/linux/ProtonMail-desktop-beta.deb"
 
 if curl -sL "$PROTON_URL" -o "$TMP_PROTON"; then
-    dpkg -i "$TMP_PROTON" || apt-get install -f -y || true
+    dpkg -i "$TMP_PROTON" 2>/dev/null || apt-get install -f -y || true
     rm -f "$TMP_PROTON"
+else
+    echo "Warning: could not download Proton Mail; skipping." >&2
 fi
 
 exit 0

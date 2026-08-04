@@ -1,4 +1,5 @@
 *.deb
+!apt-repo/*.deb
 *.iso
 *.tar.gz
 *.tar.xz

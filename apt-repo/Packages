@@ -1,23 +1,47 @@
-Package: opsec
-Version: 1.0.0
+Package: opsec-de
 Architecture: all
+Version: 1.0.0
+Priority: optional
+Section: x11
 Maintainer: ckazros <officialckazros@gmail.com>
-Filename: opsec_1.0.0_all.deb
-Size: 2144
-Description: Complete OpSec suite containing Mullvad VPN, Mullvad Browser, and Proton Mail.
+Depends: opsec, openbox, picom, python3, python3-tk, feh, x11-xserver-utils, rofi, tint2
+Filename: ./opsec-de_1.0.0_all.deb
+Size: 3214
+MD5sum: e3fa7211d5472cb6eb96aa1b97866961
+SHA1: 55843eff84614e9b47548c312c2675e0abec0c0d
+SHA256: fd27e0b3f704aecf93cb1208ec10e386f59e2d12db6eaacaa8660c7a36c30492
+SHA512: bc65b438a6aed98b6f6b8e696ac097d3e2679e5380c23e1414cd00554b4cbacf32de207933f6d9ef29177f8c63cdc26925fd56da7dfc9cb497e000e1fe1d1456
+Description: OpSec Desktop Environment (opsecDE)
+ Custom privacy-focused Linux desktop environment pre-configured with OpSec control panel, security status indicators, and desktop session integration.
 
 Package: opsec-software
-Version: 1.0.0
 Architecture: all
+Version: 1.0.0
+Priority: optional
+Section: utils
 Maintainer: ckazros <officialckazros@gmail.com>
-Filename: opsec-software_1.0.0_all.deb
-Size: 2180
+Depends: curl, wget, gnupg, apt-transport-https, ca-certificates, lsb-release, xz-utils, desktop-file-utils
+Filename: ./opsec-software_1.0.0_all.deb
+Size: 2994
+MD5sum: d48d55ee83b84d4418ae357ee8b72cd7
+SHA1: e8a58ac71ea2791651d6faa225d3ff9d04b50839
+SHA256: efd58d4aae901efad708d0aacec0913d41e4b81e0dda3ee4dba009db607b7796
+SHA512: 773b7dfaea46f7021ce1114d5f37530bfa766101e1c0d9cac62bd7a3bf7eed6e19aacf86e0bb6af2e04c7ba3d601cc4a973fd849a4d1de94523c50918b38df0c
 Description: Complete OpSec software suite containing Mullvad VPN, Mullvad Browser, and Proton Mail.
+ Meta-package that installs and configures privacy and operational security software on Debian/Ubuntu systems.
 
-Package: opsec-de
-Version: 1.0.0
+Package: opsec
 Architecture: all
+Version: 1.0.0
+Priority: optional
+Section: utils
 Maintainer: ckazros <officialckazros@gmail.com>
-Filename: opsec-de_1.0.0_all.deb
-Size: 8306
-Description: OpSec Desktop Environment (opsecDE) privacy desktop environment and control center.
+Depends: curl, wget, gnupg, apt-transport-https, ca-certificates, lsb-release, xz-utils, desktop-file-utils
+Filename: ./opsec_1.0.0_all.deb
+Size: 2926
+MD5sum: bd4639bc28f26885da516cb6ceb344bc
+SHA1: 5cbcc2ac053c4feffc168dc4d5fd20298d2ea328
+SHA256: 70e9fb12953baf80082956abc1d2cb2b8ec1aad553673a93212ed28953725813
+SHA512: b9fc273dd3e4b569859542a0725e55c7bf576bf8ebc44692d772b80495d92c69434432a127130b08d345288d6608a6dfbf67f0bdc3a6eb817a0319425f9d6bfb
+Description: Complete OpSec suite containing Mullvad VPN, Mullvad Browser, and Proton Mail.
+
