@@ -2,6 +2,32 @@
 
 Automated Debian/Ubuntu repository for installing privacy and operational security software via `sudo apt install opsec`, featuring `opsecOS` security Linux distribution and `opsecDE` (OpSec Desktop Environment).
 
+## opsecOS Live ISO
+
+Download the latest bootable ISO from [GitHub Releases](https://github.com/Officialckazros/OpSec-install/releases).
+
+### Write to USB
+
+```bash
+sudo dd if=opsecOS-1.0.0-amd64.iso of=/dev/sdX bs=4M status=progress oflag=sync
+```
+
+Or use [Balena Etcher](https://etcher.balena.io/) for a graphical tool.
+
+**Default credentials:** user / live
+
+### What's Inside
+
+- Debian 12 (Bookworm) base with live-boot
+- opsecDE desktop environment (Openbox, opsec-panel, opsec-control-center)
+- Mullvad VPN (auto-configured repository)
+- Mullvad Browser (privacy-focused web browser)
+- Proton Mail (desktop client)
+- Kernel sysctl hardening (99-opsec-security.conf)
+- UFW firewall (deny incoming, allow VPN ports)
+- MAC address randomization on boot
+- Auto-login to opsecDE session
+
 ## Included Software Suite
 
 - **Mullvad VPN**: Official Mullvad VPN APT package and repository configuration.
@@ -37,10 +63,20 @@ sudo apt install opsec-de
 
 ## Building opsecOS Live ISO
 
-To build the bootable `opsecOS-1.0.0-amd64.iso` image containing `opsecDE`:
+The ISO is automatically built by GitHub Actions when a version tag is pushed:
 
 ```bash
-make iso
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+The workflow can also be triggered manually from the [Actions tab](https://github.com/Officialckazros/OpSec-install/actions).
+
+### Local Build (Linux Only)
+
+```bash
+sudo apt install live-build debootstrap xorriso isolinux syslinux-efi grub-pc-bin grub-efi-amd64-bin mtools dosfstools squashfs-tools
+sudo ./iso-builder/build-iso.sh
 ```
 
 Output: `opsecOS-1.0.0-amd64.iso`

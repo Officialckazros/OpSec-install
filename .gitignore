@@ -5,3 +5,4 @@
 __pycache__/
 *.pyc
 .DS_Store
+build_tmp_iso/

@@ -4,95 +4,196 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 OUTPUT_ISO="${ROOT_DIR}/opsecOS-1.0.0-amd64.iso"
-export ROOT_DIR
-export OUTPUT_ISO
 
-chmod +x "${ROOT_DIR}/opsec-os/security/"*.sh "${ROOT_DIR}/opsec-os/desktop/"*.sh "${ROOT_DIR}/opsec-de/usr/bin/"* 2>/dev/null || true
+if [ "$(uname -s)" = "Darwin" ]; then
+    echo "ERROR: Building the opsecOS ISO requires Linux (Debian/Ubuntu)."
+    echo ""
+    echo "Options:"
+    echo "  1. Push a tag to trigger the GitHub Actions build:"
+    echo "     git tag v1.0.0 && git push origin v1.0.0"
+    echo ""
+    echo "  2. Run the workflow manually from the Actions tab:"
+    echo "     https://github.com/Officialckazros/OpSec-install/actions"
+    echo ""
+    echo "  3. Build on a Linux machine or VM:"
+    echo "     sudo apt install live-build debootstrap xorriso syslinux-efi"
+    echo "     ./iso-builder/build-iso.sh"
+    exit 1
+fi
 
-python3 -c '
-import os, sys, struct, tarfile, io, gzip
+if [ "$(id -u)" -ne 0 ]; then
+    echo "This script must be run as root: sudo ./iso-builder/build-iso.sh"
+    exit 1
+fi
 
-root_dir = os.environ["ROOT_DIR"]
-output_iso = os.environ["OUTPUT_ISO"]
+for dep in lb debootstrap xorriso; do
+    if ! command -v "$dep" >/dev/null 2>&1; then
+        echo "Missing dependency: $dep"
+        echo "Install with: sudo apt install live-build debootstrap xorriso isolinux syslinux-efi grub-pc-bin grub-efi-amd64-bin mtools dosfstools squashfs-tools"
+        exit 1
+    fi
+done
 
-iso_dir = os.path.join(root_dir, "build_tmp_iso")
-os.makedirs(os.path.join(iso_dir, "live"), exist_ok=True)
-os.makedirs(os.path.join(iso_dir, "boot", "grub"), exist_ok=True)
-os.makedirs(os.path.join(iso_dir, "opsec"), exist_ok=True)
-os.makedirs(os.path.join(iso_dir, "opsec-de"), exist_ok=True)
+chmod +x "${ROOT_DIR}/build-repo.sh"
+"${ROOT_DIR}/build-repo.sh"
 
-grub_cfg = """set default="0"
-set timeout=5
+BUILD_DIR="/tmp/opsec-live-build"
+rm -rf "${BUILD_DIR}"
+mkdir -p "${BUILD_DIR}"
+cd "${BUILD_DIR}"
 
-menuentry "opsecOS 1.0.0 with opsecDE (Security Hardened)" {
-    linux /live/vmlinuz boot=live quiet splash opsec.hardened=1 desktop=opsecDE
-    initrd /live/initrd.img
-}
+lb config \
+    --architecture amd64 \
+    --distribution bookworm \
+    --archive-areas "main contrib non-free non-free-firmware" \
+    --binary-images iso-hybrid \
+    --bootloaders "grub-efi,syslinux" \
+    --debian-installer none \
+    --memtest none \
+    --iso-application "opsecOS" \
+    --iso-publisher "ckazros" \
+    --iso-volume "opsecOS 1.0.0" \
+    --image-name "opsecOS-1.0.0-amd64" \
+    --apt-indices false \
+    --cache true
 
-menuentry "opsecOS 1.0.0 Live (Failsafe Mode)" {
-    linux /live/vmlinuz boot=live nomodeset opsec.hardened=1
-    initrd /live/initrd.img
-}
-"""
+mkdir -p config/package-lists
+cat > config/package-lists/opsec.list.chroot << 'EOF'
+linux-image-amd64
+live-boot
+live-config
+live-config-systemd
+systemd-sysv
+firmware-linux-free
+xorg
+xserver-xorg
+xinit
+openbox
+picom
+python3
+python3-tk
+feh
+x11-xserver-utils
+rofi
+tint2
+lightdm
+lightdm-gtk-greeter
+curl
+wget
+gnupg
+apt-transport-https
+ca-certificates
+lsb-release
+xz-utils
+desktop-file-utils
+ufw
+iptables
+macchanger
+network-manager
+network-manager-gnome
+pulseaudio
+pavucontrol
+xfce4-terminal
+thunar
+sudo
+EOF
 
-with open(os.path.join(iso_dir, "boot", "grub", "grub.cfg"), "w") as f:
-    f.write(grub_cfg)
+mkdir -p config/packages.chroot
+cp "${ROOT_DIR}/apt-repo/opsec_1.0.0_all.deb" config/packages.chroot/
+cp "${ROOT_DIR}/apt-repo/opsec-software_1.0.0_all.deb" config/packages.chroot/
+cp "${ROOT_DIR}/apt-repo/opsec-de_1.0.0_all.deb" config/packages.chroot/
 
-squashfs_data = b"opsecOS_opsecDE_squashfs_payload_v1.0.0_security_hardened\n"
-with open(os.path.join(iso_dir, "live", "filesystem.squashfs"), "wb") as f:
-    f.write(squashfs_data * 120)
+mkdir -p config/includes.chroot/etc/sysctl.d
+cp "${ROOT_DIR}/opsec-os/security/99-opsec-security.conf" config/includes.chroot/etc/sysctl.d/
 
-with open(os.path.join(iso_dir, "live", "vmlinuz"), "wb") as f:
-    f.write(b"opsecOS_linux_kernel_image\n" * 50)
+mkdir -p config/includes.chroot/usr/local/sbin
+cp "${ROOT_DIR}/opsec-os/security/opsec-firewall.sh" config/includes.chroot/usr/local/sbin/
+cp "${ROOT_DIR}/opsec-os/security/mac-spoof.sh" config/includes.chroot/usr/local/sbin/
+chmod +x config/includes.chroot/usr/local/sbin/*.sh
 
-with open(os.path.join(iso_dir, "live", "initrd.img"), "wb") as f:
-    f.write(b"opsecOS_initramfs_image\n" * 50)
+mkdir -p config/includes.chroot/etc/lightdm/lightdm.conf.d
+cat > config/includes.chroot/etc/lightdm/lightdm.conf.d/90-autologin.conf << 'EOF'
+[Seat:*]
+autologin-user=user
+autologin-session=opsecDE
+user-session=opsecDE
+EOF
 
-opsec_info = """opsecOS Version: 1.0.0
-Desktop Environment: opsecDE (OpSec Desktop Environment)
-Components: opsec-session, opsec-panel, opsec-control-center
-Security Suite: Mullvad VPN, Mullvad Browser, Proton Mail, AppArmor, UFW, MAC-Spoof
-Hardening: sysctl 99-opsec-security.conf
-"""
-with open(os.path.join(iso_dir, "opsec", "info.txt"), "w") as f:
-    f.write(opsec_info)
+mkdir -p config/hooks/normal
+cat > config/hooks/normal/0500-opsec-setup.hook.chroot << 'HOOKEOF'
+#!/bin/bash
+set -e
 
-with open(output_iso, "wb") as f:
-    f.write(b"\x00" * 32768)
-    
-    pvd = bytearray(2048)
-    pvd[0] = 1
-    pvd[1:6] = b"CD001"
-    pvd[6] = 1
-    pvd[8:40] = b"OPSECOS_OPSECDE_AMD64".ljust(32, b" ")
-    pvd[40:72] = b"OPSECOS_SECURITY_LINUX".ljust(32, b" ")
-    pvd[72:80] = struct.pack("<I", 2048) + struct.pack(">I", 2048)
-    pvd[120:124] = struct.pack("<H", 1) + struct.pack(">H", 1)
-    pvd[124:128] = struct.pack("<H", 2048) + struct.pack(">H", 2048)
-    
-    f.write(pvd)
+sysctl --system 2>/dev/null || true
 
-    evd = bytearray(2048)
-    evd[0] = 255
-    evd[1:6] = b"CD001"
-    evd[6] = 1
-    f.write(evd)
+chmod +x /usr/local/sbin/opsec-firewall.sh 2>/dev/null || true
+chmod +x /usr/local/sbin/mac-spoof.sh 2>/dev/null || true
 
-    padding_sectors = 16
-    f.write(b"\x00" * (2048 * padding_sectors))
+useradd -m -s /bin/bash -G sudo,audio,video,plugdev,netdev,cdrom user 2>/dev/null || true
+echo "user:live" | chpasswd
+echo "user ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/opsec-live
+chmod 440 /etc/sudoers.d/opsec-live
 
-    tar_buf = io.BytesIO()
-    with tarfile.open(fileobj=tar_buf, mode="w:gz") as tar:
-        for root, dirs, files in os.walk(iso_dir):
-            for file in files:
-                full_path = os.path.join(root, file)
-                rel_path = os.path.relpath(full_path, iso_dir)
-                tar.add(full_path, arcname=rel_path)
-    tar_bytes = tar_buf.getvalue()
-    f.write(tar_bytes)
+mkdir -p /etc/skel/Desktop
 
-import shutil
-shutil.rmtree(iso_dir, ignore_errors=True)
-'
+cat > /etc/skel/Desktop/mullvad-browser.desktop << 'DTEOF'
+[Desktop Entry]
+Type=Application
+Name=Mullvad Browser
+Exec=/usr/bin/mullvad-browser %U
+Icon=/opt/mullvad-browser/browser/chrome/icons/default/default128.png
+Terminal=false
+Categories=Network;WebBrowser;Security;
+DTEOF
+
+cat > /etc/skel/Desktop/opsec-control-center.desktop << 'DTEOF2'
+[Desktop Entry]
+Type=Application
+Name=OpSec Control Center
+Exec=/usr/bin/opsec-control-center
+Icon=preferences-system
+Terminal=false
+Categories=System;Security;
+DTEOF2
+
+chmod +x /etc/skel/Desktop/*.desktop 2>/dev/null || true
+
+if [ -d /home/user ]; then
+    cp -r /etc/skel/Desktop /home/user/Desktop 2>/dev/null || true
+    chown -R user:user /home/user 2>/dev/null || true
+fi
+
+cat > /etc/os-release << 'OSEOF'
+PRETTY_NAME="opsecOS 1.0.0"
+NAME="opsecOS"
+VERSION_ID="1.0.0"
+VERSION="1.0.0 (Bookworm)"
+ID=opsecos
+ID_LIKE=debian
+HOME_URL="https://github.com/Officialckazros/OpSec-install"
+BUG_REPORT_URL="https://github.com/Officialckazros/OpSec-install/issues"
+OSEOF
+
+echo "opsecOS 1.0.0" > /etc/opsec-release
+HOOKEOF
+chmod +x config/hooks/normal/0500-opsec-setup.hook.chroot
+
+lb build
+
+ISO_FILE=$(ls *.iso 2>/dev/null | head -1)
+if [ -n "${ISO_FILE}" ]; then
+    cp "${ISO_FILE}" "${OUTPUT_ISO}"
+    echo ""
+    echo "ISO built successfully: ${OUTPUT_ISO}"
+    echo "Size: $(du -h "${OUTPUT_ISO}" | cut -f1)"
+    echo ""
+    echo "Write to USB:"
+    echo "  sudo dd if=${OUTPUT_ISO} of=/dev/sdX bs=4M status=progress oflag=sync"
+else
+    echo "ERROR: ISO build failed - no .iso file produced"
+    exit 1
+fi
+
+rm -rf "${BUILD_DIR}"
 
 exit 0
