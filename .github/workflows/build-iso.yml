@@ -203,7 +203,9 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name || 'v1.0.0' }}
+          # On a tag push, use the pushed tag (e.g. v1.0.0).
+          # On manual dispatch (branch), fall back to v1.0.0.
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || 'v1.0.0' }}
           name: "opsecOS 1.0.0"
           body: |
             ## opsecOS 1.0.0 - Security-Hardened Live Linux
