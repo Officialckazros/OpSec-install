@@ -16,6 +16,10 @@ iso:
 	chmod +x iso-builder/build-iso.sh
 	sudo ./iso-builder/build-iso.sh
 
+docker-iso:
+	chmod +x iso-builder/docker-build-iso.sh
+	./iso-builder/docker-build-iso.sh
+
 install-repo: build-repo
 	./setup.sh
 

@@ -79,4 +79,14 @@ sudo apt install live-build debootstrap xorriso isolinux syslinux-efi grub-pc-bi
 sudo ./iso-builder/build-iso.sh
 ```
 
+### Local Build on macOS (Docker)
+
+No Linux VM needed — builds the real ISO inside a Debian container:
+
+```bash
+brew install --cask docker   # or: brew install colima docker && colima start
+./iso-builder/docker-build-iso.sh
+# or: make docker-iso
+```
+
 Output: `opsecOS-1.0.0-amd64.iso`
