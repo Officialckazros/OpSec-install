@@ -71,6 +71,7 @@ jobs:
             --iso-publisher "ckazros" \
             --iso-volume "opsecOS-1.0.0" \
             --apt-indices false \
+            --apt-secure false \
             --cache false
 
           cat > config/package-lists/opsec.list.chroot << 'PKGEOF'
@@ -180,6 +181,12 @@ jobs:
           deb http://security.debian.org/debian-security trixie-security main contrib non-free non-free-firmware
           APTSRC
           sed -i 's/^[[:space:]]*//' /etc/apt/sources.list
+          # Re-enable strict apt signature verification in the installed image
+          # (the build uses --apt-secure false to avoid needing gpg in-chroot).
+          cat > /etc/apt/apt.conf.d/99opsec-secure << 'APTCONF'
+          APT::Get::AllowUnauthenticated "false";
+          APTCONF
+          sed -i 's/^[[:space:]]*//' /etc/apt/apt.conf.d/99opsec-secure
           cat > /etc/os-release << 'OSEOF'
           PRETTY_NAME="opsecOS 1.0.0"
           NAME="opsecOS"

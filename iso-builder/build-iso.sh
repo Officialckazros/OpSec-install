@@ -64,6 +64,7 @@ lb config \
     --iso-publisher "ckazros" \
     --iso-volume "opsecOS-1.0.0" \
     --apt-indices false \
+    --apt-secure false \
     --cache true
 
 mkdir -p config/package-lists
@@ -178,6 +179,11 @@ deb http://deb.debian.org/debian trixie main contrib non-free non-free-firmware
 deb http://deb.debian.org/debian trixie-updates main contrib non-free non-free-firmware
 deb http://security.debian.org/debian-security trixie-security main contrib non-free non-free-firmware
 APTSRC
+# Re-enable strict apt signature verification in the installed image
+# (the build uses --apt-secure false to avoid needing gpg in-chroot).
+cat > /etc/apt/apt.conf.d/99opsec-secure << 'APTCONF'
+APT::Get::AllowUnauthenticated "false";
+APTCONF
 cat > /etc/os-release << 'OSEOF'
 PRETTY_NAME="opsecOS 1.0.0"
 NAME="opsecOS"
