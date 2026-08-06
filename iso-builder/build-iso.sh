@@ -45,9 +45,15 @@ cd "${BUILD_DIR}"
 # live-build's auto security repo emits the legacy "<distro>/updates" suite
 # (404s on current Debian); the hook below writes the correct trixie-security
 # source into the image instead.
+# live-build's auto security repo emits the legacy "<distro>/updates" suite
+# (404s on current Debian); the hook below writes the correct trixie-security
+# source into the image instead.
+# Also: debootstrap base lacks full gpg, so install gnupg via
+# --debootstrap-options so the first chroot apt-get update can verify signatures.
 lb config \
     --architecture amd64 \
     --distribution trixie \
+    --debootstrap-options "--include=gnupg,gpgv" \
     --archive-areas "main contrib non-free non-free-firmware" \
     --binary-images iso-hybrid \
     --bootloader syslinux \
