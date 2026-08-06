@@ -44,12 +44,16 @@ cd "${BUILD_DIR}"
 
 lb config \
     --architecture amd64 \
-    --distribution bookworm \
+    --distribution trixie \
     --archive-areas "main contrib non-free non-free-firmware" \
     --binary-images iso-hybrid \
     --bootloader syslinux \
     --debian-installer none \
     --memtest none \
+    # live-build's auto security repo emits the legacy "<distro>/updates" suite,
+    # which 404s on current Debian; the hook below writes the correct
+    # trixie-security source into the image instead.
+    --security false \
     --iso-application "opsecOS" \
     --iso-publisher "ckazros" \
     --iso-volume "opsecOS-1.0.0" \
@@ -162,11 +166,17 @@ if [ -d /home/user ]; then
     chown -R user:user /home/user 2>/dev/null || true
 fi
 
+# Correct apt sources for the installed image (trixie + updates + security).
+cat > /etc/apt/sources.list << 'APTSRC'
+deb http://deb.debian.org/debian trixie main contrib non-free non-free-firmware
+deb http://deb.debian.org/debian trixie-updates main contrib non-free non-free-firmware
+deb http://security.debian.org/debian-security trixie-security main contrib non-free non-free-firmware
+APTSRC
 cat > /etc/os-release << 'OSEOF'
 PRETTY_NAME="opsecOS 1.0.0"
 NAME="opsecOS"
 VERSION_ID="1.0.0"
-VERSION="1.0.0 (Bookworm)"
+VERSION="1.0.0 (Trixie)"
 ID=opsecos
 ID_LIKE=debian
 HOME_URL="https://github.com/Officialckazros/OpSec-install"

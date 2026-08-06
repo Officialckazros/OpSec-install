@@ -18,7 +18,7 @@ Or use [Balena Etcher](https://etcher.balena.io/) for a graphical tool.
 
 ### What's Inside
 
-- Debian 12 (Bookworm) base with live-boot
+- Debian 13 (Trixie) base with live-boot
 - opsecDE desktop environment (Openbox, opsec-panel, opsec-control-center)
 - Mullvad VPN (auto-configured repository)
 - Mullvad Browser (privacy-focused web browser)

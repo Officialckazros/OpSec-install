@@ -29,14 +29,14 @@ if ! docker info >/dev/null 2>&1; then
     exit 1
 fi
 
-echo "Building opsecOS ISO inside a Debian bookworm container..."
+echo "Building opsecOS ISO inside a Debian trixie container..."
 echo "This downloads ~2 GB of packages and can take 20-60 minutes."
 echo "Output will be written to: ${OUTPUT_ISO}"
 
 docker run --rm --privileged \
     -v "${ROOT_DIR}:/src" \
     -w /src \
-    debian:bookworm \
+    debian:trixie \
     bash -c '
         set -e
         export DEBIAN_FRONTEND=noninteractive
