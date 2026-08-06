@@ -31,7 +31,7 @@ jobs:
               apt-get install -y --no-install-recommends \
                 live-build debootstrap xorriso isolinux syslinux-efi \
                 grub-pc-bin grub-efi-amd64-bin mtools dosfstools squashfs-tools \
-                ca-certificates curl gnupg python3
+                ca-certificates curl gnupg python3 fakeroot apt-utils
               /src/iso-builder/build-iso.sh
             '
 

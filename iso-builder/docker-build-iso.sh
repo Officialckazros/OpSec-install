@@ -45,7 +45,7 @@ docker run --rm --privileged \
         apt-get install -y --no-install-recommends \
             live-build debootstrap xorriso isolinux syslinux-efi \
             grub-pc-bin grub-efi-amd64-bin mtools dosfstools squashfs-tools \
-            ca-certificates curl gnupg
+            ca-certificates curl gnupg python3 fakeroot apt-utils
         echo "== Building .deb packages =="
         /src/build-repo.sh
         echo "== Building ISO (lb build) =="
