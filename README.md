@@ -66,6 +66,16 @@ sudo apt install opsec-de       # opsecDE desktop environment
 sudo apt install opsec-software # OpSec software suite
 ```
 
+### Install Directly from a .deb (No Repo, No Git, No One-Liner)
+
+Grab the package file and install it — dependencies are pulled from the distro's
+normal repositories, so nothing else is needed:
+
+```bash
+wget https://officialckazros.github.io/OpSec-install/apt-repo/opsec_1.0.0_all.deb
+sudo apt install ./opsec_1.0.0_all.deb
+```
+
 ---
 
 ## Building opsecOS Live ISO
