@@ -18,211 +18,30 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install live-build dependencies
+      - name: Build opsecOS ISO (Debian trixie container)
         run: |
-          sudo apt-get update
-          sudo apt-get install -y live-build debootstrap xorriso isolinux syslinux-efi grub-pc-bin grub-efi-amd64-bin mtools dosfstools squashfs-tools
-
-      - name: Build .deb packages
-        run: |
-          chmod +x build-repo.sh
-          ./build-repo.sh
-
-      - name: Create build script
-        run: |
-          cat > /tmp/build-opsec-iso.sh << 'SCRIPT'
-          #!/bin/bash
-          set -e
-
-          SRC_DIR="$1"
-          WORK="/tmp/opsec-live"
-          rm -rf "$WORK"
-          mkdir -p "$WORK"
-          cd "$WORK"
-
-          # live-build's auto security repo emits the legacy "<distro>/updates"
-          # suite (404s on current Debian); the hook below writes the correct
-          # trixie-security source into the image instead.
-          # live-build's auto security repo emits the legacy "<distro>/updates"
-          # suite (404s on current Debian); the hook below writes the correct
-          # trixie-security source into the image instead.
-          # Note: some live-build versions reject --debootstrap-options, so gnupg
-          # is not injected via debootstrap; the build uses --apt-secure false
-          # to avoid needing gpg in the chroot.
-          lb config \
-            --mode debian \
-            --architecture amd64 \
-            --distribution trixie \
-            --parent-distribution trixie \
-            --parent-mirror-bootstrap http://deb.debian.org/debian \
-            --parent-mirror-chroot http://deb.debian.org/debian \
-            --parent-mirror-binary http://deb.debian.org/debian \
-            --mirror-bootstrap http://deb.debian.org/debian \
-            --mirror-chroot http://deb.debian.org/debian \
-            --mirror-binary http://deb.debian.org/debian \
-            --archive-areas "main contrib non-free non-free-firmware" \
-            --binary-images iso-hybrid \
-            --bootloader syslinux \
-            --debian-installer none \
-            --memtest none \
-            --security false \
-            --iso-application "opsecOS" \
-            --iso-publisher "ckazros" \
-            --iso-volume "opsecOS-1.0.0" \
-            --apt-indices false \
-            --apt-secure false \
-            --cache false
-
-          cat > config/package-lists/opsec.list.chroot << 'PKGEOF'
-          linux-image-amd64
-          live-boot
-          live-config
-          live-config-systemd
-          systemd-sysv
-          firmware-linux-free
-          xorg
-          xserver-xorg
-          xinit
-          openbox
-          picom
-          python3
-          python3-tk
-          feh
-          x11-xserver-utils
-          rofi
-          tint2
-          lightdm
-          lightdm-gtk-greeter
-          curl
-          wget
-          gnupg
-          apt-transport-https
-          ca-certificates
-          lsb-release
-          xz-utils
-          desktop-file-utils
-          ufw
-          iptables
-          macchanger
-          network-manager
-          network-manager-gnome
-          pulseaudio
-          pavucontrol
-          xfce4-terminal
-          thunar
-          sudo
-          PKGEOF
-          sed -i 's/^[[:space:]]*//' config/package-lists/opsec.list.chroot
-
-          mkdir -p config/packages.chroot
-          cp "${SRC_DIR}/apt-repo/opsec_1.0.0_all.deb" config/packages.chroot/
-          cp "${SRC_DIR}/apt-repo/opsec-software_1.0.0_all.deb" config/packages.chroot/
-          cp "${SRC_DIR}/apt-repo/opsec-de_1.0.0_all.deb" config/packages.chroot/
-
-          mkdir -p config/includes.chroot/etc/sysctl.d
-          cp "${SRC_DIR}/opsec-os/security/99-opsec-security.conf" config/includes.chroot/etc/sysctl.d/
-
-          mkdir -p config/includes.chroot/usr/local/sbin
-          cp "${SRC_DIR}/opsec-os/security/opsec-firewall.sh" config/includes.chroot/usr/local/sbin/
-          cp "${SRC_DIR}/opsec-os/security/mac-spoof.sh" config/includes.chroot/usr/local/sbin/
-          chmod +x config/includes.chroot/usr/local/sbin/*.sh
-
-          mkdir -p config/includes.chroot/etc/lightdm/lightdm.conf.d
-          cat > config/includes.chroot/etc/lightdm/lightdm.conf.d/90-autologin.conf << 'LDMEOF'
-          [Seat:*]
-          autologin-user=user
-          autologin-session=opsecDE
-          user-session=opsecDE
-          LDMEOF
-          sed -i 's/^[[:space:]]*//' config/includes.chroot/etc/lightdm/lightdm.conf.d/90-autologin.conf
-
-          mkdir -p config/hooks/normal
-          cat > config/hooks/normal/0500-opsec-setup.hook.chroot << 'HOOKEOF'
-          #!/bin/bash
-          set -e
-          sysctl --system 2>/dev/null || true
-          chmod +x /usr/local/sbin/opsec-firewall.sh 2>/dev/null || true
-          chmod +x /usr/local/sbin/mac-spoof.sh 2>/dev/null || true
-          useradd -m -s /bin/bash -G sudo,audio,video,plugdev,netdev,cdrom user 2>/dev/null || true
-          echo "user:live" | chpasswd
-          echo "user ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/opsec-live
-          chmod 440 /etc/sudoers.d/opsec-live
-          mkdir -p /etc/skel/Desktop
-          cat > /etc/skel/Desktop/mullvad-browser.desktop << 'DTEOF'
-          [Desktop Entry]
-          Type=Application
-          Name=Mullvad Browser
-          Exec=/usr/bin/mullvad-browser %U
-          Icon=/opt/mullvad-browser/browser/chrome/icons/default/default128.png
-          Terminal=false
-          Categories=Network;WebBrowser;Security;
-          DTEOF
-          sed -i 's/^[[:space:]]*//' /etc/skel/Desktop/mullvad-browser.desktop
-          cat > /etc/skel/Desktop/opsec-control-center.desktop << 'DTEOF2'
-          [Desktop Entry]
-          Type=Application
-          Name=OpSec Control Center
-          Exec=/usr/bin/opsec-control-center
-          Icon=preferences-system
-          Terminal=false
-          Categories=System;Security;
-          DTEOF2
-          sed -i 's/^[[:space:]]*//' /etc/skel/Desktop/opsec-control-center.desktop
-          chmod +x /etc/skel/Desktop/*.desktop 2>/dev/null || true
-          if [ -d /home/user ]; then
-              cp -r /etc/skel/Desktop /home/user/Desktop 2>/dev/null || true
-              chown -R user:user /home/user 2>/dev/null || true
-          fi
-          # Correct apt sources for the installed image (trixie + updates + security).
-          cat > /etc/apt/sources.list << 'APTSRC'
-          deb http://deb.debian.org/debian trixie main contrib non-free non-free-firmware
-          deb http://deb.debian.org/debian trixie-updates main contrib non-free non-free-firmware
-          deb http://security.debian.org/debian-security trixie-security main contrib non-free non-free-firmware
-          APTSRC
-          sed -i 's/^[[:space:]]*//' /etc/apt/sources.list
-          # Re-enable strict apt signature verification in the installed image
-          # (the build uses --apt-secure false to avoid needing gpg in-chroot).
-          cat > /etc/apt/apt.conf.d/99opsec-secure << 'APTCONF'
-          APT::Get::AllowUnauthenticated "false";
-          APTCONF
-          sed -i 's/^[[:space:]]*//' /etc/apt/apt.conf.d/99opsec-secure
-          cat > /etc/os-release << 'OSEOF'
-          PRETTY_NAME="opsecOS 1.0.0"
-          NAME="opsecOS"
-          VERSION_ID="1.0.0"
-          VERSION="1.0.0 (Trixie)"
-          ID=opsecos
-          ID_LIKE=debian
-          HOME_URL="https://github.com/Officialckazros/OpSec-install"
-          BUG_REPORT_URL="https://github.com/Officialckazros/OpSec-install/issues"
-          OSEOF
-          sed -i 's/^[[:space:]]*//' /etc/os-release
-          echo "opsecOS 1.0.0" > /etc/opsec-release
-          HOOKEOF
-          sed -i 's/^[[:space:]]*//' config/hooks/normal/0500-opsec-setup.hook.chroot
-          chmod +x config/hooks/normal/0500-opsec-setup.hook.chroot
-
-          lb build
-
-          ls -lh *.iso
-          file *.iso
-          SCRIPT
-          chmod +x /tmp/build-opsec-iso.sh
-
-      - name: Build opsecOS ISO
-        run: sudo /tmp/build-opsec-iso.sh "${GITHUB_WORKSPACE}"
+          docker run --rm --privileged \
+            -v "${GITHUB_WORKSPACE}:/src" \
+            -w /src \
+            debian:trixie \
+            bash -c '
+              set -e
+              export DEBIAN_FRONTEND=noninteractive
+              apt-get update
+              apt-get install -y --no-install-recommends \
+                live-build debootstrap xorriso isolinux syslinux-efi \
+                grub-pc-bin grub-efi-amd64-bin mtools dosfstools squashfs-tools \
+                ca-certificates curl gnupg python3
+              /src/iso-builder/build-iso.sh
+            '
 
       - name: Prepare ISO for release
         run: |
-          cd /tmp/opsec-live
-          ISO_FILE=$(ls *.iso 2>/dev/null | head -1)
-          if [ -z "$ISO_FILE" ]; then
-            echo "ERROR: No ISO file found"
-            exit 1
-          fi
-          sudo mv "$ISO_FILE" opsecOS-1.0.0-amd64.iso 2>/dev/null || true
+          cd "${GITHUB_WORKSPACE}"
           sudo chmod 644 opsecOS-1.0.0-amd64.iso
-          echo "ISO_SIZE=$(du -h /tmp/opsec-live/opsecOS-1.0.0-amd64.iso | cut -f1)" >> $GITHUB_ENV
+          ls -lh opsecOS-1.0.0-amd64.iso
+          file opsecOS-1.0.0-amd64.iso
+          echo "ISO_SIZE=$(du -h opsecOS-1.0.0-amd64.iso | cut -f1)" >> $GITHUB_ENV
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -261,7 +80,7 @@ jobs:
             Or use [Balena Etcher](https://etcher.balena.io/) for a graphical tool.
 
             **Default credentials:** user / live
-          files: /tmp/opsec-live/opsecOS-1.0.0-amd64.iso
+          files: ${{ github.workspace }}/opsecOS-1.0.0-amd64.iso
           draft: false
           prerelease: false
         env:

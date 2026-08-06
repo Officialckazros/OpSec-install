@@ -45,9 +45,6 @@ cd "${BUILD_DIR}"
 # live-build's auto security repo emits the legacy "<distro>/updates" suite
 # (404s on current Debian); the hook below writes the correct trixie-security
 # source into the image instead.
-# live-build's auto security repo emits the legacy "<distro>/updates" suite
-# (404s on current Debian); the hook below writes the correct trixie-security
-# source into the image instead.
 # Note: some live-build versions reject --debootstrap-options, so gnupg is not
 # injected via debootstrap; the build uses --apt-secure false instead.
 lb config \
@@ -107,10 +104,12 @@ thunar
 sudo
 EOF
 
-mkdir -p config/packages.chroot
-cp "${ROOT_DIR}/apt-repo/opsec_1.0.0_all.deb" config/packages.chroot/
-cp "${ROOT_DIR}/apt-repo/opsec-software_1.0.0_all.deb" config/packages.chroot/
-cp "${ROOT_DIR}/apt-repo/opsec-de_1.0.0_all.deb" config/packages.chroot/
+# Install the opsec .debs via the chroot hook (dpkg -i) instead of live-build's
+# local apt repo, which needs an unsigned repo to be trusted.
+mkdir -p config/includes.chroot/root/opsec-debs
+cp "${ROOT_DIR}/apt-repo/opsec_1.0.0_all.deb" config/includes.chroot/root/opsec-debs/
+cp "${ROOT_DIR}/apt-repo/opsec-software_1.0.0_all.deb" config/includes.chroot/root/opsec-debs/
+cp "${ROOT_DIR}/apt-repo/opsec-de_1.0.0_all.deb" config/includes.chroot/root/opsec-debs/
 
 mkdir -p config/includes.chroot/etc/sysctl.d
 cp "${ROOT_DIR}/opsec-os/security/99-opsec-security.conf" config/includes.chroot/etc/sysctl.d/
@@ -132,6 +131,14 @@ mkdir -p config/hooks/normal
 cat > config/hooks/normal/0500-opsec-setup.hook.chroot << 'HOOKEOF'
 #!/bin/bash
 set -e
+
+# Install the opsec packages (deps are provided by the package list).
+if ls /root/opsec-debs/*.deb >/dev/null 2>&1; then
+    dpkg -i /root/opsec-debs/opsec_1.0.0_all.deb \
+           /root/opsec-debs/opsec-software_1.0.0_all.deb \
+           /root/opsec-debs/opsec-de_1.0.0_all.deb || apt-get -f install -y
+    rm -rf /root/opsec-debs
+fi
 
 sysctl --system 2>/dev/null || true
 
