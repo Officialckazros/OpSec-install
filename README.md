@@ -46,17 +46,24 @@ Or use [Balena Etcher](https://etcher.balena.io/) for a graphical tool.
 
 ## Direct APT Installation (Without Git Clone)
 
+The APT repository is served from GitHub Pages at
+`https://officialckazros.github.io/OpSec-install/apt-repo`.
+
 ### One-Line Automated Installation
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Officialckazros/OpSec-install/main/install.sh | sudo bash
+curl -fsSL https://officialckazros.github.io/OpSec-install/install.sh | sudo bash
 ```
 
-### Install opsecDE Desktop Environment via APT
+Adds the opsec APT repository and installs the `opsec` meta-package.
+
+### Install Individual Packages via APT
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Officialckazros/OpSec-install/main/add-repo.sh | sudo bash
-sudo apt install opsec-de
+curl -fsSL https://officialckazros.github.io/OpSec-install/add-repo.sh | sudo bash
+sudo apt install opsec          # OpSec suite (Mullvad VPN, Mullvad Browser, Proton Mail)
+sudo apt install opsec-de       # opsecDE desktop environment
+sudo apt install opsec-software # OpSec software suite
 ```
 
 ---
