@@ -42,6 +42,9 @@ rm -rf "${BUILD_DIR}"
 mkdir -p "${BUILD_DIR}"
 cd "${BUILD_DIR}"
 
+# live-build's auto security repo emits the legacy "<distro>/updates" suite
+# (404s on current Debian); the hook below writes the correct trixie-security
+# source into the image instead.
 lb config \
     --architecture amd64 \
     --distribution trixie \
@@ -50,9 +53,6 @@ lb config \
     --bootloader syslinux \
     --debian-installer none \
     --memtest none \
-    # live-build's auto security repo emits the legacy "<distro>/updates" suite,
-    # which 404s on current Debian; the hook below writes the correct
-    # trixie-security source into the image instead.
     --security false \
     --iso-application "opsecOS" \
     --iso-publisher "ckazros" \
