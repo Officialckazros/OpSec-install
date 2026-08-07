@@ -61,6 +61,7 @@ lb config \
     --debian-installer live \
     --debian-installer-gui true \
     --debian-installer-distribution trixie \
+    --firmware-binary false \
     --memtest none \
     --security false \
     --iso-application "opsecOS" \
