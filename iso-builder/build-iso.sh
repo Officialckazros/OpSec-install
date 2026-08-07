@@ -49,8 +49,9 @@ cd "${BUILD_DIR}"
 # Note: some live-build versions reject --debootstrap-options, so gnupg is not
 # injected via debootstrap; the build uses --apt-secure false instead.
 # The Debian GTK installer is embedded (--debian-installer live) so the live
-# desktop has a full graphical "Install opsecOS" launcher, and preseed's
-# late_command installs the opsec packages into the installed system.
+# desktop has a full graphical "Install opsecOS" launcher, and the preseed at
+# config/includes.installer/preseed.cfg (auto-detected by live-build) installs
+# the opsec packages into the installed system.
 lb config \
     --architecture amd64 \
     --distribution trixie \
@@ -60,7 +61,6 @@ lb config \
     --debian-installer live \
     --debian-installer-gui true \
     --debian-installer-distribution trixie \
-    --preseed file:///cdrom/preseed.cfg \
     --memtest none \
     --security false \
     --iso-application "opsecOS" \
@@ -174,10 +174,12 @@ cp "${ROOT_DIR}/apt-repo/opsec_1.0.0_all.deb" config/includes.chroot/root/opsec-
 cp "${ROOT_DIR}/apt-repo/opsec-software_1.0.0_all.deb" config/includes.chroot/root/opsec-debs/
 cp "${ROOT_DIR}/apt-repo/opsec-de_1.0.0_all.deb" config/includes.chroot/root/opsec-debs/
 
-# Preseed for the embedded Debian installer: keeps the GUI fully interactive
-# while installing the opsec suite into the target system at the end.
-mkdir -p config/includes.binary
-cp "${ROOT_DIR}/iso-builder/preseed.cfg" config/includes.binary/preseed.cfg
+# Preseed for the embedded Debian installer: kept in config/includes.installer/
+# (the documented location), so live-build auto-detects it and wires it into
+# the installer. It keeps the GUI fully interactive while installing the opsec
+# suite into the target system at the end.
+mkdir -p config/includes.installer
+cp "${ROOT_DIR}/iso-builder/preseed.cfg" config/includes.installer/preseed.cfg
 
 mkdir -p config/includes.chroot/etc/lightdm/lightdm.conf.d
 cat > config/includes.chroot/etc/lightdm/lightdm.conf.d/90-autologin.conf << 'EOF'
