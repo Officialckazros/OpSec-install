@@ -92,7 +92,8 @@ rofi
 lightdm
 lightdm-gtk-greeter
 sudo
-policykit-1
+polkitd
+pkexec
 desktop-file-utils
 xdg-utils
 x11-utils
