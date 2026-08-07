@@ -105,7 +105,6 @@ plank
 conky-std
 dunst
 libnotify-bin
-papirus-icon-theme
 i3lock
 scrot
 fonts-noto-core
@@ -123,7 +122,6 @@ apt-transport-https
 ca-certificates
 lsb-release
 xz-utils
-git
 openssh-client
 
 # --- Security / OpSec tooling ---
@@ -157,7 +155,7 @@ tmux
 ripgrep
 fd-find
 jq
-vim
+vim-tiny
 nano
 tree
 unzip
@@ -170,6 +168,16 @@ mkdir -p config/includes.chroot/root/opsec-debs
 cp "${ROOT_DIR}/apt-repo/opsec_1.0.0_all.deb" config/includes.chroot/root/opsec-debs/
 cp "${ROOT_DIR}/apt-repo/opsec-software_1.0.0_all.deb" config/includes.chroot/root/opsec-debs/
 cp "${ROOT_DIR}/apt-repo/opsec-de_1.0.0_all.deb" config/includes.chroot/root/opsec-debs/
+
+# APT pinning: keep the ISO under GitHub's 2 GiB release-asset limit.
+# mesa-vulkan-drivers is only a Recommends of libvulkan1 (nothing in opsecDE
+# uses Vulkan) and pulls in the ~130MB libllvm19; pin it out at build time.
+mkdir -p config/apt
+cat > config/apt/preferences << 'PINEOF'
+Package: mesa-vulkan-drivers
+Pin: version *
+Pin-Priority: -1
+PINEOF
 
 # Preseed for the embedded Debian installer: kept in config/includes.installer/
 # (the documented location), so live-build auto-detects it and wires it into

@@ -45,7 +45,7 @@ user account and password. When it finishes, the opsec suite (`opsec`,
 - Auto-login to opsecDE session
 - Pre-installed **debugging & security tools**: `gdb`, `strace`, `ltrace`,
   `htop`, `btop`, `nmap`, `tcpdump`, `tshark`, `nikto`, `hydra`, `sqlmap`,
-  `netcat`, `socat`, `dnsutils`, `whois`, `git`, `vim`, `ripgrep`, `jq`, `tmux`,
+  `netcat`, `socat`, `dnsutils`, `whois`, `vim-tiny`, `ripgrep`, `jq`, `tmux`,
   and more.
 
 ## Included Software Suite
