@@ -8,4 +8,4 @@ ZoomEnabled=true
 ZoomPercent=140
 Theme=Transparent
 HideMode=Intellihide
-DockItems=opsec-control-center.dockitem;mullvad-browser.dockitem;proton-mail.dockitem;xfce4-terminal.dockitem;thunar.dockitem;opsec-status.dockitem;install-opsecos.dockitem;
+DockItems=opsec-control-center.dockitem;mullvad-browser.dockitem;proton-mail.dockitem;xfce4-terminal.dockitem;pcmanfm.dockitem;opsec-status.dockitem;install-opsecos.dockitem;

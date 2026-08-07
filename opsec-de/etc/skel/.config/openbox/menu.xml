@@ -16,13 +16,13 @@
         <action name="Execute"><command>opsec-launch terminal</command></action>
       </item>
       <item label="File Manager">
-        <action name="Execute"><command>thunar</command></action>
+        <action name="Execute"><command>pcmanfm</command></action>
       </item>
       <item label="App Launcher (rofi)">
         <action name="Execute"><command>rofi -show drun</command></action>
       </item>
-      <item label="Network Manager">
-        <action name="Execute"><command>nm-connection-editor</command></action>
+      <item label="Network (nmtui)">
+        <action name="Execute"><command>opsec-launch terminal -e nmtui</command></action>
       </item>
       <item label="PulseAudio Control">
         <action name="Execute"><command>pavucontrol</command></action>

@@ -68,7 +68,7 @@ jobs:
             - Mullvad VPN (auto-configured)
             - Mullvad Browser (privacy-focused web browser)
             - Proton Mail (desktop client)
-            - Debugging & security tools (gdb, strace, nmap, tcpdump, wireshark, nikto, hydra, sqlmap, htop, btop, ...)
+            - Debugging & security tools (gdb, strace, nmap, tcpdump, tshark, nikto, hydra, sqlmap, htop, btop, ...)
 
             ### Security Hardening
             - Kernel sysctl hardening (99-opsec-security.conf)

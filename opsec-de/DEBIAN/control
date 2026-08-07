@@ -4,6 +4,6 @@ Section: x11
 Priority: optional
 Architecture: all
 Maintainer: ckazros <officialckazros@gmail.com>
-Depends: opsec, openbox, picom, python3, python3-tk, feh, x11-xserver-utils, rofi, plank, conky-std, dunst, libnotify-bin, papirus-icon-theme, polkitd, pkexec, xorg, xinit, lightdm, lightdm-gtk-greeter, xfce4-terminal, xfce4-taskmanager, thunar, pcmanfm, network-manager, network-manager-gnome, pulseaudio, pavucontrol, i3lock, scrot, fonts-noto-core, fonts-noto-color-emoji
+Depends: opsec, openbox, picom, python3, python3-tk, feh, x11-xserver-utils, rofi, plank, conky-std, dunst, libnotify-bin, papirus-icon-theme, polkitd, pkexec, xorg, xinit, lightdm, lightdm-gtk-greeter, xfce4-terminal, xfce4-taskmanager, pcmanfm, network-manager, pulseaudio, pavucontrol, i3lock, scrot, fonts-noto-core, fonts-noto-color-emoji
 Description: OpSec Desktop Environment (opsecDE)
  Custom privacy-focused Linux desktop environment pre-configured with OpSec control panel, dock (Plank), system monitor (Conky), notifications (Dunst), security status indicators, and desktop session integration.

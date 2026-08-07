@@ -113,11 +113,9 @@ fonts-noto-color-emoji
 
 # --- Network / apps ---
 network-manager
-network-manager-gnome
 pulseaudio
 pavucontrol
 xfce4-terminal
-thunar
 curl
 wget
 gnupg
@@ -135,7 +133,7 @@ macchanger
 nmap
 netcat-openbsd
 tcpdump
-wireshark
+tshark
 nikto
 hydra
 sqlmap
@@ -164,8 +162,6 @@ nano
 tree
 unzip
 p7zip-full
-python3-pip
-python3-venv
 EOF
 
 # Install the opsec .debs via the chroot hook (dpkg -i) instead of live-build's
