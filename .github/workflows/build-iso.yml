@@ -43,6 +43,16 @@ jobs:
           file opsecOS-1.0.0-amd64.iso
           echo "ISO_SIZE=$(du -h opsecOS-1.0.0-amd64.iso | cut -f1)" >> $GITHUB_ENV
 
+      # Safety net: release assets cap at 2 GiB, workflow artifacts allow up
+      # to 5 GiB — the ISO is always downloadable from this run's artifacts.
+      - name: Upload ISO as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: opsecos-iso
+          path: opsecOS-1.0.0-amd64.iso
+          if-no-files-found: error
+          retention-days: 30
+
       - name: Remove stale release asset (allow rebuilds on same tag)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

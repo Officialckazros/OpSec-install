@@ -248,7 +248,37 @@ echo "opsecOS 1.0.0" > /etc/opsec-release
 HOOKEOF
 chmod +x config/hooks/normal/0500-opsec-setup.hook.chroot
 
+# Extra chroot hook: shrink + diagnose the live image. Runs after packages are
+# installed (hooks run at the end of the chroot stage, so everything below is
+# reflected in the squashfs). The apt .deb cache is incompressible and can
+# account for a huge chunk of the ISO — drop it.
+mkdir -p config/hooks/normal
+cat > config/hooks/normal/0900-opsec-shrink.hook.chroot << 'SHRINKEOF'
+#!/bin/bash
+set -e
+
+# Drop apt cache + lists (the live system has --apt-indices false anyway).
+apt-get clean 2>/dev/null || true
+rm -rf /var/cache/apt/archives/* 2>/dev/null || true
+rm -rf /var/lib/apt/lists/* 2>/dev/null || true
+
+# Diagnose where the space goes in the live image.
+echo "=== chroot size diagnostic ==="
+du -xsh / 2>/dev/null || true
+du -xsh /usr /var /lib /opt /root 2>/dev/null || true
+du -xsh /usr/share/* 2>/dev/null | sort -rh | head -15 || true
+du -xsh /var/cache /var/lib 2>/dev/null || true
+echo "=== end chroot size diagnostic ==="
+SHRINKEOF
+chmod +x config/hooks/normal/0900-opsec-shrink.hook.chroot
+
 lb build
+
+# Diagnose the binary (ISO) contents.
+echo "=== binary size diagnostic ==="
+ls -lh binary/live/filesystem.squashfs 2>/dev/null || true
+du -xsh binary/* 2>/dev/null | sort -rh | head -20 || true
+echo "=== end binary size diagnostic ==="
 
 ISO_FILE=$(ls *.iso 2>/dev/null | head -1)
 if [ -n "${ISO_FILE}" ]; then
