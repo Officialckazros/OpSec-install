@@ -80,15 +80,20 @@ TMP_MB="/tmp/mullvad-browser.tar.xz"
 if curl -sL "$MB_URL" -o "$TMP_MB"; then
     tar -xJf "$TMP_MB" -C /opt/ 2>/dev/null
     rm -f "$TMP_MB"
-    if [ -d "/opt/mullvad-browser" ]; then
-        ln -sf /opt/mullvad-browser/start-mullvad-browser /usr/bin/mullvad-browser
+    # Locate the launcher instead of hardcoding the path (the tarball's top-level
+    # dir name can vary), and force it executable. Fixes:
+    #   Failed to execute child process "/usr/bin/mullvad-browser" (Permission denied)
+    MB_START=$(find /opt -maxdepth 2 -type f -name start-mullvad-browser 2>/dev/null | head -n1)
+    if [ -n "$MB_START" ]; then
+        chmod +x "$MB_START"
+        ln -sf "$MB_START" /usr/bin/mullvad-browser
         cat <<EOF > /usr/share/applications/mullvad-browser.desktop
 [Desktop Entry]
 Type=Application
 Name=Mullvad Browser
 Comment=Privacy-focused web browser
 Exec=/usr/bin/mullvad-browser %U
-Icon=/opt/mullvad-browser/browser/chrome/icons/default/default128.png
+Icon=$(dirname "$MB_START")/browser/chrome/icons/default/default128.png
 Terminal=false
 Categories=Network;WebBrowser;Security;
 EOF

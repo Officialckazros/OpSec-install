@@ -43,6 +43,14 @@ jobs:
           file opsecOS-1.0.0-amd64.iso
           echo "ISO_SIZE=$(du -h opsecOS-1.0.0-amd64.iso | cut -f1)" >> $GITHUB_ENV
 
+      - name: Remove stale release asset (allow rebuilds on same tag)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ github.ref_type == 'tag' && github.ref_name || 'v1.0.0' }}"
+          gh release delete-asset "${TAG}" opsecOS-1.0.0-amd64.iso \
+            --repo "${GITHUB_REPOSITORY}" --yes 2>/dev/null || true
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -53,12 +61,14 @@ jobs:
           body: |
             ## opsecOS 1.0.0 - Security-Hardened Live Linux
 
-            Bootable live ISO featuring **opsecDE** (OpSec Desktop Environment).
+            Bootable live ISO featuring **opsecDE** (OpSec Desktop Environment)
+            and a **full graphical installer** ("Install opsecOS" on the desktop).
 
             ### Included Software
             - Mullvad VPN (auto-configured)
             - Mullvad Browser (privacy-focused web browser)
             - Proton Mail (desktop client)
+            - Debugging & security tools (gdb, strace, nmap, tcpdump, wireshark, nikto, hydra, sqlmap, htop, btop, ...)
 
             ### Security Hardening
             - Kernel sysctl hardening (99-opsec-security.conf)
@@ -70,8 +80,16 @@ jobs:
             - opsec-session (X11 session with Openbox)
             - opsec-panel (status bar with VPN and firewall indicators)
             - opsec-control-center (graphical security dashboard)
+            - Plank dock with pinned launchers
+            - Conky system monitor + Dunst notifications
+            - Custom privacy-themed wallpaper
 
-            ### Quick Start
+            ### Installation
+            Boot the ISO and click **"Install opsecOS"** (desktop/dock/panel) to
+            launch the full graphical Debian installer. The opsec suite is
+            installed automatically into the new system.
+
+            ### Quick Start (Live)
             ```bash
             # Write to USB (replace /dev/sdX with your drive)
             sudo dd if=opsecOS-1.0.0-amd64.iso of=/dev/sdX bs=4M status=progress oflag=sync
@@ -85,3 +103,21 @@ jobs:
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish regenerated APT repo (GitHub Pages)
+        # build-repo.sh regenerates apt-repo inside the container; commit it so
+        # the Pages-hosted apt repository serves the updated packages.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd "${GITHUB_WORKSPACE}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apt-repo/Packages apt-repo/Packages.gz apt-repo/Release apt-repo/*.deb
+          if ! git diff --cached --quiet; then
+            git commit -m "build: regenerate apt repo with opsecOS 1.0.0 packages"
+            git push origin main
+            echo "apt-repo regenerated and pushed."
+          else
+            echo "No changes to apt-repo; skipping commit."
+          fi

@@ -1,0 +1,165 @@
+#!/bin/bash
+# opsec-software-install — installs & configures the OpSec software suite:
+#   * Mullvad VPN     (official APT repo + package, install deferred to background)
+#   * Mullvad Browser (portable bundle, symlinked to /usr/bin/mullvad-browser)
+#   * Proton Mail     (desktop client)
+#
+# Idempotent: components that are already installed are skipped, so this can be
+# re-run safely (e.g. by both the `opsec` and `opsec-software` postinsts, or by
+# the user via `sudo opsec-software`).
+
+set +e
+
+export DEBIAN_FRONTEND=noninteractive
+LOG=/var/log/opsec-software-install.log
+: > "$LOG"
+
+echo "== opsec-software installer ==" | tee -a "$LOG"
+
+mkdir -p /usr/share/keyrings /etc/apt/sources.list.d /usr/share/applications
+
+if command -v curl >/dev/null 2>&1; then
+    FETCH_CMD="curl -fsSL"
+else
+    FETCH_CMD="wget -qO-"
+fi
+
+# ---------------------------------------------------------------- 1. Mullvad VPN
+if command -v mullvad >/dev/null 2>&1; then
+    echo "Mullvad VPN already installed." | tee -a "$LOG"
+else
+    if $FETCH_CMD https://repository.mullvad.net/deb/mullvad-keyring.asc 2>>"$LOG" \
+        | gpg --dearmor --yes -o /usr/share/keyrings/mullvad-keyring.gpg 2>>"$LOG"; then
+        ARCH=$(dpkg --print-architecture 2>/dev/null || echo "amd64")
+        DETECTED_CODENAME=$(lsb_release -cs 2>/dev/null || echo "stable")
+
+        # Mullvad's APT repo only ships indices for a fixed set of codenames;
+        # fall back to the generic "stable" suite for anything unsupported.
+        case "$DETECTED_CODENAME" in
+            bookworm|focal|jammy|noble|plucky|sid|trixie|stable|testing)
+                CODENAME="$DETECTED_CODENAME"
+                ;;
+            *)
+                CODENAME="stable"
+                ;;
+        esac
+
+        echo "deb [signed-by=/usr/share/keyrings/mullvad-keyring.gpg arch=${ARCH}] https://repository.mullvad.net/deb/stable ${CODENAME} main" > /etc/apt/sources.list.d/mullvad-vpn.list
+
+        # postinst runs while dpkg/apt already hold the dpkg lock for this
+        # transaction, so the actual `apt-get install` is deferred to a
+        # detached background job that waits for the lock to free up.
+        DEFER_CMD='
+            sleep 5
+            for i in $(seq 1 30); do
+                if apt-get update -o Dir::Etc::sourcelist="sources.list.d/mullvad-vpn.list" -o Dir::Etc::sourceparts="-" -o APT::Get::List-Cleanup="0" 2>/tmp/opsec-mullvad-attempt.log \
+                    && apt-get install -y --no-install-recommends mullvad-vpn 2>>/tmp/opsec-mullvad-attempt.log; then
+                    exit 0
+                fi
+                if grep -qi "lock" /tmp/opsec-mullvad-attempt.log 2>/dev/null; then
+                    sleep 5
+                    continue
+                fi
+                break
+            done
+            cat /tmp/opsec-mullvad-attempt.log 2>/dev/null
+            exit 1
+        '
+
+        if command -v systemd-run >/dev/null 2>&1 \
+            && systemd-run --no-block --unit=opsec-install-mullvad-vpn /bin/bash -c "$DEFER_CMD" >/dev/null 2>&1; then
+            echo "Queued background install of mullvad-vpn via systemd." | tee -a "$LOG"
+        else
+            nohup setsid /bin/bash -c "$DEFER_CMD" </dev/null >/var/log/opsec-mullvad-install.log 2>&1 &
+            disown -a
+            echo "Queued background install of mullvad-vpn (log: /var/log/opsec-mullvad-install.log)." | tee -a "$LOG"
+        fi
+    else
+        echo "WARNING: could not fetch Mullvad keyring; skipping VPN setup." | tee -a "$LOG"
+    fi
+fi
+
+# ----------------------------------------------------------- 2. Mullvad Browser
+if [ -x /usr/bin/mullvad-browser ] || [ -x /usr/bin/opsec-browser ] \
+    || ls /opt/mullvad-browser/*/start-mullvad-browser >/dev/null 2>&1; then
+    echo "Mullvad Browser already installed." | tee -a "$LOG"
+else
+    MB_VERSION=$(curl -s https://api.github.com/repos/mullvad/mullvad-browser/releases/latest \
+        | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' 2>/dev/null)
+    [ -n "$MB_VERSION" ] || MB_VERSION="13.5.1"
+
+    MB_URL="https://github.com/mullvad/mullvad-browser/releases/download/${MB_VERSION}/mullvad-browser-linux-x86_64-${MB_VERSION}.tar.xz"
+    TMP_MB="/tmp/mullvad-browser.tar.xz"
+
+    if curl -sL "$MB_URL" -o "$TMP_MB"; then
+        tar -xJf "$TMP_MB" -C /opt/ 2>>"$LOG"
+        rm -f "$TMP_MB"
+
+        MB_START=$(find /opt/mullvad-browser -maxdepth 2 -type f -name start-mullvad-browser 2>/dev/null | head -n1)
+        if [ -n "$MB_START" ]; then
+            # Make the bundle usable by a non-root user: user-writable so the
+            # in-browser updater works, and everything executable. Preserves
+            # the setuid bit on chrome-sandbox (needed for the sandbox).
+            chmod -R u+rwX,go+rX "/opt/mullvad-browser" 2>/dev/null || true
+            chmod -R u+w "/opt/mullvad-browser" 2>/dev/null || true
+            chmod +x "$MB_START" 2>/dev/null || true
+            FF="$(dirname "$MB_START")/firefox"
+            [ -x "$FF" ] || chmod +x "$FF" 2>/dev/null || true
+            SANDBOX=$(find "/opt/mullvad-browser" -maxdepth 4 -name chrome-sandbox 2>/dev/null | head -n1)
+            [ -n "$SANDBOX" ] && chmod 4755 "$SANDBOX" 2>/dev/null || true
+
+            ln -sf "$MB_START" /usr/bin/mullvad-browser
+            ln -sf "$MB_START" /usr/bin/opsec-browser
+            cat > /usr/share/applications/mullvad-browser.desktop <<EOF
+[Desktop Entry]
+Type=Application
+Name=Mullvad Browser
+Comment=Privacy-focused web browser
+Exec=/usr/bin/mullvad-browser %U
+Icon=$(dirname "$MB_START")/browser/chrome/icons/default/default128.png
+Terminal=false
+Categories=Network;WebBrowser;Security;
+EOF
+            echo "Mullvad Browser installed ($MB_VERSION)." | tee -a "$LOG"
+        else
+            echo "WARNING: Mullvad Browser extracted but launcher not found." | tee -a "$LOG"
+        fi
+    else
+        echo "WARNING: could not download Mullvad Browser; skipping." | tee -a "$LOG"
+    fi
+fi
+
+# ---------------------------------------------------------------- 3. Proton Mail
+if command -v protonmail >/dev/null 2>&1 || command -v proton-mail >/dev/null 2>&1 \
+    || ls "/opt/Proton Mail" >/dev/null 2>&1 || ls /opt/protonmail >/dev/null 2>&1; then
+    echo "Proton Mail already installed." | tee -a "$LOG"
+else
+    TMP_PROTON="/tmp/proton-mail.deb"
+    PROTON_URL="https://proton.me/download/mail/linux/ProtonMail-desktop-beta.deb"
+
+    if curl -sL "$PROTON_URL" -o "$TMP_PROTON"; then
+        dpkg -i "$TMP_PROTON" 2>>"$LOG" || apt-get install -f -y 2>>"$LOG" || true
+        rm -f "$TMP_PROTON"
+
+        # Recent Proton builds name the binary "protonmail"; normalize a
+        # predictable /usr/bin/proton-mail symlink so launchers always work.
+        for p in /usr/bin/protonmail /usr/bin/proton-mail /usr/bin/protonmail-desktop; do
+            if [ -x "$p" ]; then
+                ln -sf "$p" /usr/bin/proton-mail 2>/dev/null || true
+                break
+            fi
+        done
+
+        if command -v protonmail >/dev/null 2>&1 || command -v proton-mail >/dev/null 2>&1 \
+            || ls "/opt/Proton Mail" >/dev/null 2>&1 || ls /opt/protonmail >/dev/null 2>&1; then
+            echo "Proton Mail installed." | tee -a "$LOG"
+        else
+            echo "WARNING: Proton Mail .deb installed but binary not detected." | tee -a "$LOG"
+        fi
+    else
+        echo "WARNING: could not download Proton Mail; skipping." | tee -a "$LOG"
+    fi
+fi
+
+echo "== opsec-software installer finished ==" | tee -a "$LOG"
+exit 0

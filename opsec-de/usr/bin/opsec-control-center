@@ -1,6 +1,15 @@
 #!/usr/bin/env python3
-import sys
+"""opsecDE Security Control Center.
+
+Graphical dashboard for the OpSec suite: VPN, browser, mail, firewall and
+MAC randomization. Uses opsec-launch for app launching (robust binary
+resolution) and pkexec/sudo for privileged actions.
+"""
+
+import os
+import shutil
 import subprocess
+import sys
 
 try:
     import tkinter as tk
@@ -8,114 +17,256 @@ try:
 except ImportError:
     sys.exit(0)
 
+COLORS = {
+    "bg": "#0f172a",
+    "panel": "#1e293b",
+    "fg": "#e2e8f0",
+    "muted": "#94a3b8",
+    "accent": "#38bdf8",
+    "green": "#22c55e",
+    "red": "#ef4444",
+    "amber": "#f59e0b",
+    "purple": "#a855f7",
+}
+
+FW_SCRIPT = "/usr/local/sbin/opsec-firewall.sh"
+MAC_SCRIPT = "/usr/local/sbin/mac-spoof.sh"
+
+
+def have(cmd):
+    return shutil.which(cmd) is not None
+
+
+def launch_app(app):
+    """Launch an app via opsec-launch (resolves real binaries)."""
+    launcher = "/usr/bin/opsec-launch"
+    if os.path.exists(launcher):
+        return subprocess.Popen([launcher, app])
+    return subprocess.Popen([app])
+
+
+def run_privileged(cmd):
+    """Run a command as root, preferring passwordless sudo then pkexec."""
+    if os.geteuid() == 0:
+        subprocess.run(cmd, check=True, capture_output=True, text=True, timeout=300)
+        return True
+    for prefix in (["sudo", "-n"], ["pkexec"], ["sudo"]):
+        if shutil.which(prefix[0]):
+            try:
+                subprocess.run(prefix + cmd, check=True, capture_output=True,
+                               text=True, timeout=300)
+                return True
+            except (subprocess.CalledProcessError, subprocess.TimeoutExpired,
+                    FileNotFoundError):
+                continue
+    return False
+
+
+def run_check(cmd):
+    try:
+        subprocess.run(cmd, check=True, capture_output=True, text=True, timeout=300)
+        return True
+    except Exception:
+        return False
+
+
 class OpSecControlCenter(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("opsecDE Security Control Center")
-        self.geometry("640x520")
-        self.configure(bg="#0f172a")
+        self.geometry("680x560")
+        self.configure(bg=COLORS["bg"])
+        self.protocol("WM_DELETE_WINDOW", self.destroy)
 
-        header = tk.Label(
-            self, text="🛡️ OpSec Security Control Center",
-            bg="#0f172a", fg="#38bdf8", font=("Helvetica", 16, "bold"), pady=16
-        )
+        header = tk.Label(self, text="\U0001f6e1\ufe0f  OpSec Security Control Center",
+                          bg=COLORS["bg"], fg=COLORS["accent"],
+                          font=("Helvetica", 16, "bold"), pady=14)
         header.pack()
 
-        score_frame = tk.Frame(self, bg="#1e293b", padx=16, pady=16)
-        score_frame.pack(fill="x", padx=24, pady=8)
+        # ---- Status card ----------------------------------------------------
+        self.score_frame = tk.Frame(self, bg=COLORS["panel"], padx=16, pady=12)
+        self.score_frame.pack(fill="x", padx=24, pady=8)
 
-        score_title = tk.Label(
-            score_frame, text="Security Status: OPTIMAL",
-            bg="#1e293b", fg="#22c55e", font=("Helvetica", 12, "bold")
-        )
-        score_title.pack(anchor="w")
+        self.score_title = tk.Label(self.score_frame, text="Security Status: ...",
+                                    bg=COLORS["panel"], fg=COLORS["amber"],
+                                    font=("Helvetica", 12, "bold"))
+        self.score_title.pack(anchor="w")
 
-        score_desc = tk.Label(
-            score_frame, text="Kernel ASLR active • Firewall Strict • DNS Leak Protection Active",
-            bg="#1e293b", fg="#94a3b8", font=("Helvetica", 9)
-        )
-        score_desc.pack(anchor="w", pady=4)
+        self.score_desc = tk.Label(self.score_frame, text="Gathering status\u2026",
+                                   bg=COLORS["panel"], fg=COLORS["muted"],
+                                   font=("Helvetica", 9), justify="left")
+        self.score_desc.pack(anchor="w", pady=4)
 
-        actions_frame = tk.LabelFrame(self, text=" Security Controls ", bg="#0f172a", fg="#94a3b8", font=("Helvetica", 10, "bold"), padx=16, pady=16)
-        actions_frame.pack(fill="both", expand=True, padx=24, pady=8)
+        # ---- Actions ---------------------------------------------------------
+        actions = tk.LabelFrame(self, text=" Security Controls ",
+                                bg=COLORS["bg"], fg=COLORS["muted"],
+                                font=("Helvetica", 10, "bold"), padx=16, pady=14)
+        actions.pack(fill="both", expand=True, padx=24, pady=8)
 
-        vpn_btn = tk.Button(
-            actions_frame, text="🔒 Connect Mullvad VPN", bg="#0284c7", fg="#ffffff",
-            font=("Helvetica", 10, "bold"), bd=0, padx=12, pady=8,
-            command=self.connect_vpn
-        )
-        vpn_btn.grid(row=0, column=0, padx=8, pady=8, sticky="ew")
+        self._button(actions, "\U0001f512 Connect Mullvad VPN", COLORS["accent"],
+                     self.connect_vpn, 0, 0)
+        self._button(actions, "\U0001f3b2 Randomize MAC Address", COLORS["purple"],
+                     self.spoof_mac, 0, 1)
+        self._button(actions, "\U0001f9f1 Enforce Strict Firewall", COLORS["green"],
+                     self.enforce_fw, 1, 0)
+        self._button(actions, "\U0001f310 Launch Mullvad Browser", COLORS["panel"],
+                     lambda: self.launch("mullvad-browser"), 1, 1)
+        self._button(actions, "\u2709\ufe0f Launch Proton Mail", COLORS["panel"],
+                     lambda: self.launch("proton-mail"), 2, 0)
+        self._button(actions, "\U0001f4ca Run OpSec Status Scan", COLORS["panel"],
+                     self.status_scan, 2, 1)
+        self._button(actions, "\U0001f4e6 Install / Refresh Software", COLORS["panel"],
+                     self.install_software, 3, 0)
+        self._button(actions, "\U0001f5a5\ufe0f Open Terminal", COLORS["panel"],
+                     lambda: self.launch("terminal"), 3, 1)
 
-        mac_btn = tk.Button(
-            actions_frame, text="🎲 Randomize MAC Address", bg="#7c3aed", fg="#ffffff",
-            font=("Helvetica", 10, "bold"), bd=0, padx=12, pady=8,
-            command=self.spoof_mac
-        )
-        mac_btn.grid(row=0, column=1, padx=8, pady=8, sticky="ew")
+        actions.columnconfigure(0, weight=1)
+        actions.columnconfigure(1, weight=1)
 
-        fw_btn = tk.Button(
-            actions_frame, text="🧱 Enforce Strict Firewall", bg="#16a34a", fg="#ffffff",
-            font=("Helvetica", 10, "bold"), bd=0, padx=12, pady=8,
-            command=self.enforce_fw
-        )
-        fw_btn.grid(row=1, column=0, padx=8, pady=8, sticky="ew")
+        # Footer
+        footer = tk.Label(self, text="opsecDE \u00b7 Debian 13 (Trixie) \u00b7 "
+                          "Security-hardened live & installed",
+                          bg=COLORS["bg"], fg=COLORS["muted"], font=("Helvetica", 8))
+        footer.pack(side="bottom", pady=6)
 
-        browser_btn = tk.Button(
-            actions_frame, text="🌐 Launch Mullvad Browser", bg="#334155", fg="#f8fafc",
-            font=("Helvetica", 10), bd=0, padx=12, pady=8,
-            command=lambda: self.launch("mullvad-browser")
-        )
-        browser_btn.grid(row=1, column=1, padx=8, pady=8, sticky="ew")
+        self.refresh_status()
 
-        mail_btn = tk.Button(
-            actions_frame, text="✉️ Launch Proton Mail", bg="#334155", fg="#f8fafc",
-            font=("Helvetica", 10), bd=0, padx=12, pady=8,
-            command=lambda: self.launch("proton-mail")
-        )
-        mail_btn.grid(row=2, column=0, padx=8, pady=8, sticky="ew")
+    def _button(self, parent, text, bg, command, row, col):
+        btn = tk.Button(parent, text=text, bg=bg, fg="#f8fafc",
+                        font=("Helvetica", 10, "bold"), bd=0, padx=10, pady=8,
+                        activebackground=bg, activeforeground="#f8fafc",
+                        command=command)
+        btn.grid(row=row, column=col, padx=8, pady=6, sticky="ew")
+        return btn
 
-        status_btn = tk.Button(
-            actions_frame, text="📊 Run OpSec Status Scan", bg="#334155", fg="#f8fafc",
-            font=("Helvetica", 10), bd=0, padx=12, pady=8,
-            command=lambda: self.launch_terminal("opsec")
-        )
-        status_btn.grid(row=2, column=1, padx=8, pady=8, sticky="ew")
-
-        actions_frame.columnconfigure(0, weight=1)
-        actions_frame.columnconfigure(1, weight=1)
-
-    def launch(self, cmd):
+    # ------------------------------------------------------------- launching
+    def launch(self, app):
         try:
-            subprocess.Popen([cmd])
+            launch_app(app)
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to launch {cmd}: {e}")
+            messagebox.showerror("Error", f"Failed to launch {app}: {e}")
 
-    def launch_terminal(self, cmd):
+    def launch_terminal_cmd(self, cmd):
         try:
-            subprocess.Popen(["x-terminal-emulator", "-e", cmd])
+            subprocess.Popen(["/usr/bin/opsec-launch", "terminal", "-e", cmd])
         except Exception:
-            subprocess.Popen([cmd])
+            pass
 
+    def status_scan(self):
+        self.launch_terminal_cmd("/usr/bin/opsec")
+
+    def install_software(self):
+        self.launch_terminal_cmd("sudo /usr/bin/opsec-software-install")
+
+    # ------------------------------------------------------------ privileged
     def connect_vpn(self):
-        try:
-            subprocess.run(["mullvad", "connect"], check=True)
-            messagebox.showinfo("OpSec VPN", "Mullvad VPN connect signal sent.")
-        except Exception:
-            messagebox.showwarning("OpSec VPN", "Mullvad VPN CLI not active or requires authentication.")
+        if have("mullvad"):
+            ok = run_check(["mullvad", "connect"])
+            if ok:
+                messagebox.showinfo("OpSec VPN", "Mullvad VPN connect signal sent.")
+            else:
+                messagebox.showwarning(
+                    "OpSec VPN",
+                    "Could not connect. Check that the Mullvad daemon is running\n"
+                    "and you are logged in (`mullvad account login`).")
+        else:
+            messagebox.showwarning(
+                "OpSec VPN",
+                "Mullvad VPN is not installed yet.\nRun 'Install / Refresh Software'.")
 
     def spoof_mac(self):
-        try:
-            subprocess.run(["sudo", "mac-spoof.sh"], check=True)
+        if not os.path.exists(MAC_SCRIPT):
+            messagebox.showwarning("OpSec Security",
+                                   "mac-spoof.sh not found. Reinstall the 'opsec' package.")
+            return
+        if run_privileged([MAC_SCRIPT]):
             messagebox.showinfo("OpSec Security", "MAC addresses randomized.")
-        except Exception:
-            messagebox.showwarning("OpSec Security", "MAC spoofing requires root permissions.")
+        else:
+            messagebox.showwarning(
+                "OpSec Security",
+                "MAC spoofing needs root. If a password prompt did not appear,\n"
+                "run: sudo /usr/local/sbin/mac-spoof.sh")
 
     def enforce_fw(self):
-        try:
-            subprocess.run(["sudo", "opsec-firewall.sh"], check=True)
+        if not os.path.exists(FW_SCRIPT):
+            messagebox.showwarning("OpSec Firewall",
+                                   "opsec-firewall.sh not found. Reinstall the 'opsec' package.")
+            return
+        if run_privileged([FW_SCRIPT]):
             messagebox.showinfo("OpSec Firewall", "Strict firewall rules enforced.")
+            self.refresh_status()
+        else:
+            messagebox.showwarning(
+                "OpSec Firewall",
+                "Firewall enforcement needs root. If a password prompt did not\n"
+                "appear, run: sudo /usr/local/sbin/opsec-firewall.sh")
+
+    # ---------------------------------------------------------------- status
+    def refresh_status(self):
+        score = 0
+        lines = []
+
+        # Apps
+        apps_ok = 0
+        if have("mullvad"):
+            apps_ok += 1
+        else:
+            lines.append("- Mullvad VPN: not installed")
+        if have("mullvad-browser") or os.path.exists("/usr/bin/mullvad-browser"):
+            apps_ok += 1
+        else:
+            lines.append("- Mullvad Browser: not installed")
+        if have("protonmail") or have("proton-mail"):
+            apps_ok += 1
+        else:
+            lines.append("- Proton Mail: not installed")
+        if apps_ok == 3:
+            score += 1
+            lines.append("+ Software suite complete")
+        else:
+            lines.append("+ Use 'Install / Refresh Software' to finish setup")
+
+        # Kernel hardening
+        h = 0
+        try:
+            if open("/proc/sys/kernel/kptr_restrict").read().strip() == "2":
+                h += 1
+            if open("/proc/sys/kernel/dmesg_restrict").read().strip() == "1":
+                h += 1
+            if open("/proc/sys/kernel/yama/ptrace_scope").read().strip() == "2":
+                h += 1
         except Exception:
-            messagebox.showwarning("OpSec Firewall", "Firewall enforcement requires root permissions.")
+            pass
+        if h >= 2:
+            score += 1
+            lines.append("+ Kernel hardening active (ASLR / dmesg / ptrace)")
+        else:
+            lines.append("- Kernel hardening partially inactive")
+
+        # Firewall
+        fw_active = False
+        try:
+            out = subprocess.run(["ufw", "status"], capture_output=True,
+                                 text=True, timeout=5).stdout
+            fw_active = "active" in out.lower()
+        except Exception:
+            pass
+        if fw_active:
+            score += 1
+            lines.append("+ UFW firewall active")
+        else:
+            lines.append("- UFW firewall not active (use 'Enforce Strict Firewall')")
+
+        if score >= 3:
+            color, label = COLORS["green"], "Security Status: OPTIMAL"
+        elif score == 2:
+            color, label = COLORS["amber"], "Security Status: GOOD"
+        else:
+            color, label = COLORS["red"], "Security Status: NEEDS ATTENTION"
+
+        self.score_title.config(text=label, fg=color)
+        self.score_desc.config(text="\n".join(lines) if lines else "All systems nominal.")
+
 
 if __name__ == "__main__":
     app = OpSecControlCenter()

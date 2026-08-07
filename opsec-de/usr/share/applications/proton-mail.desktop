@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Proton Mail
+Comment=Encrypted email desktop client
+Exec=/usr/bin/opsec-launch proton-mail %U
+Icon=mail-folder-sent
+Terminal=false
+Categories=Network;Email;Security;

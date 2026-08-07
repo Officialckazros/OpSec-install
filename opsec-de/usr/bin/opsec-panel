@@ -46,9 +46,16 @@ class OpSecPanel(tk.Tk):
         ctrl_btn = tk.Button(
             left_frame, text="⚙️ Control Center", bg="#1e293b", fg="#a855f7",
             font=("Helvetica", 9, "bold"), bd=0, padx=6, pady=2,
-            command=lambda: self.launch("opsec-control-center")
+            command=lambda: self.launch("control-center")
         )
         ctrl_btn.pack(side="left", padx=4)
+
+        install_btn = tk.Button(
+            left_frame, text="💾 Install opsecOS", bg="#1e293b", fg="#22c55e",
+            font=("Helvetica", 9, "bold"), bd=0, padx=6, pady=2,
+            command=self.open_installer
+        )
+        install_btn.pack(side="left", padx=4)
 
         right_frame = tk.Frame(self, bg="#0f172a")
         right_frame.pack(side="right", padx=12)
@@ -75,13 +82,25 @@ class OpSecPanel(tk.Tk):
 
     def launch(self, cmd):
         try:
-            subprocess.Popen([cmd])
+            subprocess.Popen(["/usr/bin/opsec-launch", cmd])
         except Exception:
-            pass
+            try:
+                subprocess.Popen([cmd])
+            except Exception:
+                pass
+
+    def open_installer(self):
+        try:
+            subprocess.Popen(["/usr/bin/debian-installer-launcher"])
+        except Exception:
+            try:
+                subprocess.Popen(["opsec-control-center"])
+            except Exception:
+                pass
 
     def open_menu(self):
         try:
-            subprocess.Popen(["opsec-control-center"])
+            subprocess.Popen(["/usr/bin/opsec-launch", "control-center"])
         except Exception:
             pass
 

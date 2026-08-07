@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=OpSec Status
+Comment=Show OpSec security & software status
+Exec=/usr/bin/opsec-launch terminal -e /usr/bin/opsec
+Icon=utilities-system-monitor
+Terminal=false
+Categories=System;Security;

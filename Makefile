@@ -7,7 +7,7 @@ ISO = opsecOS-1.0.0-amd64.iso
 all: build-repo
 
 build:
-	chmod +x opsec/DEBIAN/postinst opsec/DEBIAN/prerm opsec/usr/bin/opsec opsec-software/DEBIAN/postinst opsec-software/DEBIAN/prerm opsec-software/usr/bin/opsec-software setup.sh install.sh add-repo.sh build-repo.sh iso-builder/build-iso.sh opsec-os/security/*.sh opsec-os/desktop/*.sh
+	chmod +x opsec/DEBIAN/postinst opsec/DEBIAN/prerm opsec/usr/bin/opsec opsec/usr/bin/opsec-launch opsec/usr/bin/opsec-software-install opsec/usr/local/sbin/*.sh opsec-software/DEBIAN/postinst opsec-software/DEBIAN/prerm opsec-software/usr/bin/opsec-software opsec-de/DEBIAN/postinst opsec-de/DEBIAN/prerm opsec-de/usr/bin/* setup.sh install.sh add-repo.sh build-repo.sh iso-builder/build-iso.sh opsec-os/security/*.sh opsec-os/desktop/*.sh tools/*.py
 	./build-repo.sh
 
 build-repo: build

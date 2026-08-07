@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+export DEBIAN_FRONTEND=noninteractive
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
@@ -47,13 +48,19 @@ cd "${BUILD_DIR}"
 # source into the image instead.
 # Note: some live-build versions reject --debootstrap-options, so gnupg is not
 # injected via debootstrap; the build uses --apt-secure false instead.
+# The Debian GTK installer is embedded (--debian-installer live) so the live
+# desktop has a full graphical "Install opsecOS" launcher, and preseed's
+# late_command installs the opsec packages into the installed system.
 lb config \
     --architecture amd64 \
     --distribution trixie \
     --archive-areas "main contrib non-free non-free-firmware" \
     --binary-images iso-hybrid \
-    --bootloader syslinux \
-    --debian-installer none \
+    --bootloader grub-efi \
+    --debian-installer live \
+    --debian-installer-gui true \
+    --debian-installer-distribution trixie \
+    --preseed file:///cdrom/preseed.cfg \
     --memtest none \
     --security false \
     --iso-application "opsecOS" \
@@ -65,6 +72,7 @@ lb config \
 
 mkdir -p config/package-lists
 cat > config/package-lists/opsec.list.chroot << 'EOF'
+# --- Base system / session ---
 linux-image-amd64
 live-boot
 live-config
@@ -81,9 +89,34 @@ python3-tk
 feh
 x11-xserver-utils
 rofi
-tint2
 lightdm
 lightdm-gtk-greeter
+sudo
+policykit-1
+desktop-file-utils
+xdg-utils
+x11-utils
+xfce4-taskmanager
+pcmanfm
+
+# --- Dock / desktop polish ("alive") ---
+plank
+conky-std
+dunst
+libnotify-bin
+papirus-icon-theme
+i3lock
+scrot
+fonts-noto-core
+fonts-noto-color-emoji
+
+# --- Network / apps ---
+network-manager
+network-manager-gnome
+pulseaudio
+pavucontrol
+xfce4-terminal
+thunar
 curl
 wget
 gnupg
@@ -91,17 +124,47 @@ apt-transport-https
 ca-certificates
 lsb-release
 xz-utils
-desktop-file-utils
+git
+openssh-client
+
+# --- Security / OpSec tooling ---
 ufw
 iptables
 macchanger
-network-manager
-network-manager-gnome
-pulseaudio
-pavucontrol
-xfce4-terminal
-thunar
-sudo
+nmap
+netcat-openbsd
+tcpdump
+wireshark
+nikto
+hydra
+sqlmap
+bind9-dnsutils
+whois
+socat
+net-tools
+debian-installer-launcher
+
+# --- Debugging / analysis ---
+gdb
+strace
+ltrace
+htop
+btop
+sysstat
+lsof
+file
+binutils
+tmux
+ripgrep
+fd-find
+jq
+vim
+nano
+tree
+unzip
+p7zip-full
+python3-pip
+python3-venv
 EOF
 
 # Install the opsec .debs via the chroot hook (dpkg -i) instead of live-build's
@@ -111,13 +174,10 @@ cp "${ROOT_DIR}/apt-repo/opsec_1.0.0_all.deb" config/includes.chroot/root/opsec-
 cp "${ROOT_DIR}/apt-repo/opsec-software_1.0.0_all.deb" config/includes.chroot/root/opsec-debs/
 cp "${ROOT_DIR}/apt-repo/opsec-de_1.0.0_all.deb" config/includes.chroot/root/opsec-debs/
 
-mkdir -p config/includes.chroot/etc/sysctl.d
-cp "${ROOT_DIR}/opsec-os/security/99-opsec-security.conf" config/includes.chroot/etc/sysctl.d/
-
-mkdir -p config/includes.chroot/usr/local/sbin
-cp "${ROOT_DIR}/opsec-os/security/opsec-firewall.sh" config/includes.chroot/usr/local/sbin/
-cp "${ROOT_DIR}/opsec-os/security/mac-spoof.sh" config/includes.chroot/usr/local/sbin/
-chmod +x config/includes.chroot/usr/local/sbin/*.sh
+# Preseed for the embedded Debian installer: keeps the GUI fully interactive
+# while installing the opsec suite into the target system at the end.
+mkdir -p config/includes.binary
+cp "${ROOT_DIR}/iso-builder/preseed.cfg" config/includes.binary/preseed.cfg
 
 mkdir -p config/includes.chroot/etc/lightdm/lightdm.conf.d
 cat > config/includes.chroot/etc/lightdm/lightdm.conf.d/90-autologin.conf << 'EOF'
@@ -133,6 +193,8 @@ cat > config/hooks/normal/0500-opsec-setup.hook.chroot << 'HOOKEOF'
 set -e
 
 # Install the opsec packages (deps are provided by the package list).
+# The opsec-de package ships the opsecDE skel configs (/etc/skel), so the
+# live user's home is populated from /etc/skel below.
 if ls /root/opsec-debs/*.deb >/dev/null 2>&1; then
     dpkg -i /root/opsec-debs/opsec_1.0.0_all.deb \
            /root/opsec-debs/opsec-software_1.0.0_all.deb \
@@ -142,40 +204,14 @@ fi
 
 sysctl --system 2>/dev/null || true
 
-chmod +x /usr/local/sbin/opsec-firewall.sh 2>/dev/null || true
-chmod +x /usr/local/sbin/mac-spoof.sh 2>/dev/null || true
-
 useradd -m -s /bin/bash -G sudo,audio,video,plugdev,netdev,cdrom user 2>/dev/null || true
 echo "user:live" | chpasswd
 echo "user ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/opsec-live
 chmod 440 /etc/sudoers.d/opsec-live
 
-mkdir -p /etc/skel/Desktop
-
-cat > /etc/skel/Desktop/mullvad-browser.desktop << 'DTEOF'
-[Desktop Entry]
-Type=Application
-Name=Mullvad Browser
-Exec=/usr/bin/mullvad-browser %U
-Icon=/opt/mullvad-browser/browser/chrome/icons/default/default128.png
-Terminal=false
-Categories=Network;WebBrowser;Security;
-DTEOF
-
-cat > /etc/skel/Desktop/opsec-control-center.desktop << 'DTEOF2'
-[Desktop Entry]
-Type=Application
-Name=OpSec Control Center
-Exec=/usr/bin/opsec-control-center
-Icon=preferences-system
-Terminal=false
-Categories=System;Security;
-DTEOF2
-
-chmod +x /etc/skel/Desktop/*.desktop 2>/dev/null || true
-
+# Apply the skel config (DE, dock, wallpaper, desktop shortcuts) to the live user.
 if [ -d /home/user ]; then
-    cp -r /etc/skel/Desktop /home/user/Desktop 2>/dev/null || true
+    cp -a /etc/skel/. /home/user/ 2>/dev/null || true
     chown -R user:user /home/user 2>/dev/null || true
 fi
 
@@ -213,6 +249,11 @@ if [ -n "${ISO_FILE}" ]; then
     echo ""
     echo "ISO built successfully: ${OUTPUT_ISO}"
     echo "Size: $(du -h "${OUTPUT_ISO}" | cut -f1)"
+    # Always drop a copy of the finished ISO into the user's Downloads folder.
+    if [ -d "${HOME}/Downloads" ] || mkdir -p "${HOME}/Downloads" 2>/dev/null; then
+        cp -f "${OUTPUT_ISO}" "${HOME}/Downloads/" 2>/dev/null \
+            && echo "Copied to: ${HOME}/Downloads/$(basename "${OUTPUT_ISO}")" || true
+    fi
     echo ""
     echo "Write to USB:"
     echo "  sudo dd if=${OUTPUT_ISO} of=/dev/sdX bs=4M status=progress oflag=sync"

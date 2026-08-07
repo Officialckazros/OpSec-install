@@ -3,5 +3,39 @@ set -e
 
 chmod +x /usr/bin/opsec-session /usr/bin/opsec-panel /usr/bin/opsec-control-center 2>/dev/null || true
 chmod 644 /usr/share/xsessions/opsecde.desktop 2>/dev/null || true
+chmod +x /etc/skel/Desktop/*.desktop 2>/dev/null || true
+
+# Refresh skel config (DE, dock, wallpaper, etc.) into existing users' homes.
+# Fresh users get it automatically via /etc/skel at account creation.
+if [ -d /etc/skel/.config ]; then
+    for h in /home/*; do
+        [ -d "$h" ] || continue
+        u=$(basename "$h")
+        cp -a /etc/skel/. "$h/" 2>/dev/null || true
+        chown -R "$u":"$u" "$h" 2>/dev/null || true
+    done
+fi
+
+# Register the opsecDE session as lightdm's default and enable the greeter.
+mkdir -p /etc/lightdm/lightdm.conf.d
+cat > /etc/lightdm/lightdm.conf.d/95-opsecde.conf <<'EOF'
+[Seat:*]
+user-session=opsecDE
+EOF
+
+# Auto-login only when a dedicated `user` account exists (e.g. the live ISO);
+# regular installs keep the normal login prompt.
+if getent passwd user >/dev/null 2>&1; then
+    cat > /etc/lightdm/lightdm.conf.d/90-opsec-autologin.conf <<'EOF'
+[Seat:*]
+autologin-user=user
+autologin-session=opsecDE
+EOF
+fi
+
+if command -v systemctl >/dev/null 2>&1; then
+    systemctl enable lightdm 2>/dev/null || true
+    systemctl set-default graphical.target 2>/dev/null || true
+fi
 
 exit 0

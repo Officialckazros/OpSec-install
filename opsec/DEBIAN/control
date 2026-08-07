@@ -4,5 +4,8 @@ Section: utils
 Priority: optional
 Architecture: all
 Maintainer: ckazros <officialckazros@gmail.com>
-Depends: curl, wget, gnupg, apt-transport-https, ca-certificates, lsb-release, xz-utils, desktop-file-utils
+Depends: curl, wget, gnupg, apt-transport-https, ca-certificates, lsb-release, xz-utils, desktop-file-utils, ufw, iptables, macchanger, policykit-1
 Description: Complete OpSec suite containing Mullvad VPN, Mullvad Browser, and Proton Mail.
+ Installs the privacy tools plus the security hardening scripts (firewall,
+ MAC randomization, sysctl hardening) and the opsec-launch launcher used by
+ the opsecDE control center.

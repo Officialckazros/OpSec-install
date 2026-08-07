@@ -1,7 +1,12 @@
 #!/bin/bash
 set -e
 
-rm -f /usr/bin/mullvad-browser /usr/bin/opsec-browser
+# Stop the deferred mullvad-vpn install job if it is still queued.
+if command -v systemctl >/dev/null 2>&1; then
+    systemctl stop opsec-install-mullvad-vpn 2>/dev/null || true
+fi
+
+rm -f /usr/bin/mullvad-browser /usr/bin/opsec-browser /usr/bin/proton-mail
 rm -f /usr/share/applications/mullvad-browser.desktop
 rm -rf /opt/mullvad-browser
 

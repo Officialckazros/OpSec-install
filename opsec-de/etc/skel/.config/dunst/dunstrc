@@ -1,0 +1,60 @@
+# opsecDE dunst notification daemon config
+[global]
+    monitor = 0
+    follow = mouse
+    width = (320, 420)
+    height = 100
+    origin = top-right
+    offset = 12x46
+    scale = 0
+    notification_limit = 5
+    progress_bar = true
+    progress_bar_height = 6
+    progress_bar_frame_width = 1
+    progress_bar_min_width = 150
+    progress_bar_max_width = 300
+    icon_position = left
+    max_icon_size = 48
+    sticky_history = yes
+    history_length = 20
+    dmenu = /usr/bin/rofi -dmenu
+    browser = /usr/bin/xdg-open
+    word_wrap = yes
+    ignore_newline = no
+    geometry = "320x100-12+46"
+    transparency = 10
+    corner_radius = 10
+    font = "Noto Sans 10"
+    format = "<b>%s</b>\n%b"
+    alignment = left
+    show_age_threshold = 60
+    word_wrap = true
+    ellipsize = middle
+    ignore_newline = false
+    stack_duplicates = true
+    hide_duplicate_count = false
+    show_indicators = yes
+
+[shortcuts]
+    close = ctrl+space
+    close_all = ctrl+shift+space
+    history = ctrl+grave
+    context = ctrl+shift+period
+
+[urgency_low]
+    background = "#1e293b"
+    foreground = "#e2e8f0"
+    timeout = 6
+    highlight = "#38bdf8"
+
+[urgency_normal]
+    background = "#1e293b"
+    foreground = "#f8fafc"
+    timeout = 8
+    highlight = "#38bdf8"
+
+[urgency_critical]
+    background = "#7f1d1d"
+    foreground = "#ffffff"
+    timeout = 0
+    highlight = "#ef4444"

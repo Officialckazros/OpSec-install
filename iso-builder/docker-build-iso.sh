@@ -56,6 +56,12 @@ if [ -f "${OUTPUT_ISO}" ]; then
     echo ""
     echo "SUCCESS: ISO built locally: ${OUTPUT_ISO}"
     echo "Size: $(du -h "${OUTPUT_ISO}" | cut -f1)"
+    # Always drop a copy of the finished ISO into the user's Downloads folder.
+    DOWNLOADS="${HOME}/Downloads"
+    if [ -d "${DOWNLOADS}" ] || mkdir -p "${DOWNLOADS}" 2>/dev/null; then
+        cp -f "${OUTPUT_ISO}" "${DOWNLOADS}/" 2>/dev/null \
+            && echo "Copied to: ${DOWNLOADS}/$(basename "${OUTPUT_ISO}")" || true
+    fi
 else
     echo "ERROR: ISO build failed - no ISO produced."
     exit 1

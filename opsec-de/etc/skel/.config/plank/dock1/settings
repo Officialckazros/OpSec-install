@@ -1,0 +1,11 @@
+[PlankDockPreferences]
+PinnedOnly=true
+Position=Bottom
+Offset=0
+Alignment=Center
+IconSize=48
+ZoomEnabled=true
+ZoomPercent=140
+Theme=Transparent
+HideMode=Intellihide
+DockItems=opsec-control-center.dockitem;mullvad-browser.dockitem;proton-mail.dockitem;xfce4-terminal.dockitem;thunar.dockitem;opsec-status.dockitem;install-opsecos.dockitem;

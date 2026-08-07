@@ -1,0 +1,62 @@
+@theme "adwaita"
+
+configuration {
+    modi: "drun,run,window";
+    show-icons: true;
+    icon-theme: "Papirus";
+    display-drun: "  Apps";
+    display-run: "  Run";
+    display-window: "  Windows";
+    display-drun-categories: "  Categories";
+    font: "Noto Sans 11";
+    location: 0;
+    width: 620;
+    lines: 12;
+    columns: 1;
+    padding: 12;
+    border-radius: 10;
+    border: 0;
+    background-color: #0f172aE6;
+    background-alt: #1e293b;
+    foreground: #e2e8f0;
+    highlight: #38bdf8;
+    urgent: #ef4444;
+    separator-style: "none";
+    hide-scrollbar: true;
+    disable-history: false;
+}
+
+@theme "adwaita"
+element {
+    background-color: transparent;
+    text-color: inherit;
+    padding: 6px 12px;
+    border-radius: 8px;
+}
+
+element selected {
+    background-color: #1e293b;
+    text-color: #38bdf8;
+}
+
+element-icon {
+    size: 1.1em;
+}
+
+element-text {
+    vertical-align: 0.5;
+    margin: 0 0 0 12px;
+}
+
+inputbar {
+    background-color: #1e293b;
+    border-radius: 8px;
+    padding: 6px 12px;
+    text-color: #f8fafc;
+}
+
+listview {
+    lines: 12;
+    columns: 1;
+    fixed-height: false;
+}

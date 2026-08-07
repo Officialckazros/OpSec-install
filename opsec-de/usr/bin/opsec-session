@@ -3,31 +3,18 @@ set -e
 
 export DESKTOP_SESSION=opsecDE
 export XDG_CURRENT_DESKTOP=opsecDE
+export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
 
-if command -v /usr/bin/opsec-firewall.sh >/dev/null 2>&1; then
-    sudo /usr/bin/opsec-firewall.sh 2>/dev/null || true
+# Apply security policies at session start. In the live ISO the `user` account
+# has passwordless sudo, so `sudo -n` applies the rules without prompting.
+if [ -x /usr/local/sbin/opsec-firewall.sh ]; then
+    sudo -n /usr/local/sbin/opsec-firewall.sh >/dev/null 2>&1 || true
 fi
 
-if command -v /usr/bin/mac-spoof.sh >/dev/null 2>&1; then
-    sudo /usr/bin/mac-spoof.sh 2>/dev/null || true
+if [ -x /usr/local/sbin/mac-spoof.sh ]; then
+    sudo -n /usr/local/sbin/mac-spoof.sh >/dev/null 2>&1 || true
 fi
 
-if command -v picom >/dev/null 2>&1; then
-    picom -b 2>/dev/null || true
-fi
-
-if command -v xsetroot >/dev/null 2>&1; then
-    xsetroot -solid "#0f172a" 2>/dev/null || true
-fi
-
-if command -v /usr/bin/opsec-panel >/dev/null 2>&1; then
-    /usr/bin/opsec-panel &
-fi
-
-if command -v openbox >/dev/null 2>&1; then
-    exec openbox
-elif command -v xfwm4 >/dev/null 2>&1; then
-    exec xfwm4
-else
-    exec twm
-fi
+# openbox reads ~/.config/openbox/autostart and starts the compositor, dock,
+# panel, conky, notifications and wallpaper.
+exec openbox

@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Install opsecOS
+Comment=Install opsecOS to your hard drive using the full graphical installer
+Exec=/usr/bin/debian-installer-launcher
+Icon=system-installer
+Terminal=false
+Categories=System;

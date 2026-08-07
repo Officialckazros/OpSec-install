@@ -1,0 +1,97 @@
+#!/bin/bash
+# opsec-launch — robust application launcher for opsecDE.
+#
+# Resolves the real binary for the OpSec apps, repairs broken permissions,
+# and reports actionable errors instead of failing silently (fixes the
+# "No such file or directory" / "Permission denied" launch failures seen
+# in the live ISO).
+#
+# Usage: opsec-launch <app> [args...]
+
+set -u
+
+usage() {
+    echo "Usage: opsec-launch <app> [args...]"
+    echo "Known apps: mullvad-browser, proton-mail, control-center, terminal, files"
+    exit 2
+}
+
+[ $# -ge 1 ] || usage
+
+APP="$1"
+shift
+
+# notify() shows a GUI notification when possible, else prints to stderr.
+notify() {
+    if command -v notify-send >/dev/null 2>&1; then
+        notify-send -u critical -i dialog-error "$1" "$2" 2>/dev/null || true
+    fi
+    echo "opsec-launch: $2" >&2
+}
+
+case "$APP" in
+    mullvad-browser|mullvad)
+        BIN=""
+        for c in /usr/bin/mullvad-browser /usr/bin/opsec-browser; do
+            [ -x "$c" ] && BIN="$c" && break
+        done
+        if [ -z "$BIN" ]; then
+            # Fall back to the real launcher inside the portable bundle.
+            for f in /opt/mullvad-browser/*/start-mullvad-browser /opt/mullvad-browser/*/mullvad-browser; do
+                [ -x "$f" ] && BIN="$f" && break
+            done
+        fi
+        if [ -z "$BIN" ] && [ -e /usr/bin/mullvad-browser ]; then
+            # Broken symlink or lost exec bit: repair and retry.
+            target="$(readlink -f /usr/bin/mullvad-browser 2>/dev/null || echo /usr/bin/mullvad-browser)"
+            chmod +x "$target" /usr/bin/mullvad-browser 2>/dev/null || true
+            [ -x "$target" ] && BIN=/usr/bin/mullvad-browser
+        fi
+        if [ -z "$BIN" ]; then
+            notify "Mullvad Browser" "Not installed. Run 'sudo opsec-software' to install it."
+            exit 127
+        fi
+        exec "$BIN" "$@"
+        ;;
+
+    proton-mail|protonmail)
+        BIN=""
+        for c in protonmail proton-mail protonmail-desktop proton-mail-desktop; do
+            p="$(command -v "$c" 2>/dev/null)"
+            [ -n "$p" ] && [ -x "$p" ] && BIN="$p" && break
+        done
+        if [ -z "$BIN" ]; then
+            for f in /usr/bin/protonmail /usr/bin/proton-mail /opt/protonmail/protonmail "/opt/Proton Mail/proton-mail" /opt/proton-mail/proton-mail; do
+                [ -x "$f" ] && BIN="$f" && break
+            done
+        fi
+        if [ -z "$BIN" ]; then
+            notify "Proton Mail" "Not installed. Run 'sudo opsec-software' to install it."
+            exit 127
+        fi
+        exec "$BIN" "$@"
+        ;;
+
+    control-center)
+        exec /usr/bin/opsec-control-center "$@"
+        ;;
+
+    terminal)
+        if command -v xfce4-terminal >/dev/null 2>&1; then
+            exec xfce4-terminal "$@"
+        fi
+        if command -v x-terminal-emulator >/dev/null 2>&1; then
+            exec x-terminal-emulator "$@"
+        fi
+        notify "Terminal" "No terminal emulator found."
+        exit 127
+        ;;
+
+    files)
+        exec thunar "$@"
+        ;;
+
+    *)
+        exec "$APP" "$@"
+        ;;
+esac

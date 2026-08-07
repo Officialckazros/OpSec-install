@@ -1,8 +1,9 @@
 #!/bin/bash
 
-echo "=== OpSec Software Suite Status ==="
+echo "=== OpSec Security & Software Status ==="
 echo ""
 
+# --- Software suite ---------------------------------------------------------
 if command -v mullvad >/dev/null 2>&1; then
     echo "[+] Mullvad VPN CLI: Installed"
     echo "    Status: $(mullvad status 2>/dev/null || echo "Not connected")"
@@ -10,16 +11,56 @@ else
     echo "[-] Mullvad VPN: Not found"
 fi
 
-if [ -f "/usr/bin/mullvad-browser" ] || command -v mullvad-browser >/dev/null 2>&1; then
+if command -v mullvad-browser >/dev/null 2>&1 || [ -x /usr/bin/mullvad-browser ]; then
     echo "[+] Mullvad Browser: Installed (/usr/bin/mullvad-browser)"
 else
     echo "[-] Mullvad Browser: Not found"
 fi
 
-if command -v proton-mail >/dev/null 2>&1 || [ -f "/usr/bin/proton-mail" ]; then
+if command -v proton-mail >/dev/null 2>&1 || command -v protonmail >/dev/null 2>&1; then
     echo "[+] Proton Mail: Installed"
 else
     echo "[-] Proton Mail: Not found"
+fi
+
+echo ""
+
+# --- Security hardening ------------------------------------------------------
+echo "--- Kernel Hardening ---"
+if [ "$(cat /proc/sys/kernel/kptr_restrict 2>/dev/null)" = "2" ]; then
+    echo "[+] kptr_restrict: hardened (2)"
+else
+    echo "[-] kptr_restrict: not hardened"
+fi
+if [ "$(cat /proc/sys/kernel/dmesg_restrict 2>/dev/null)" = "1" ]; then
+    echo "[+] dmesg_restrict: hardened (1)"
+else
+    echo "[-] dmesg_restrict: not hardened"
+fi
+if [ "$(cat /proc/sys/kernel/yama/ptrace_scope 2>/dev/null)" = "2" ]; then
+    echo "[+] ptrace_scope: hardened (2)"
+else
+    echo "[-] ptrace_scope: not hardened"
+fi
+
+echo ""
+echo "--- Firewall ---"
+if command -v ufw >/dev/null 2>&1 && ufw status 2>/dev/null | grep -qi "active"; then
+    echo "[+] UFW: active"
+else
+    echo "[-] UFW: inactive"
+fi
+if command -v iptables >/dev/null 2>&1; then
+    INPUT_POLICY=$(iptables -L INPUT 2>/dev/null | head -n1 | awk '{print $4}')
+    echo "[+] iptables INPUT policy: ${INPUT_POLICY:-unknown}"
+fi
+
+echo ""
+echo "--- Firewall script ---"
+if [ -x /usr/local/sbin/opsec-firewall.sh ]; then
+    echo "[+] opsec-firewall.sh: present (/usr/local/sbin/opsec-firewall.sh)"
+else
+    echo "[-] opsec-firewall.sh: missing"
 fi
 
 echo ""

@@ -6,7 +6,7 @@ APT_REPO_DIR="${SCRIPT_DIR}/apt-repo"
 
 mkdir -p "${APT_REPO_DIR}"
 
-chmod 755 "${SCRIPT_DIR}/opsec/DEBIAN/postinst" "${SCRIPT_DIR}/opsec/DEBIAN/prerm" "${SCRIPT_DIR}/opsec/usr/bin/opsec" 2>/dev/null || true
+chmod 755 "${SCRIPT_DIR}/opsec/DEBIAN/postinst" "${SCRIPT_DIR}/opsec/DEBIAN/prerm" "${SCRIPT_DIR}/opsec/usr/bin/"* "${SCRIPT_DIR}/opsec/usr/local/sbin/"* 2>/dev/null || true
 chmod 755 "${SCRIPT_DIR}/opsec-software/DEBIAN/postinst" "${SCRIPT_DIR}/opsec-software/DEBIAN/prerm" "${SCRIPT_DIR}/opsec-software/usr/bin/opsec-software" 2>/dev/null || true
 chmod 755 "${SCRIPT_DIR}/opsec-de/DEBIAN/postinst" "${SCRIPT_DIR}/opsec-de/DEBIAN/prerm" "${SCRIPT_DIR}/opsec-de/usr/bin/"* 2>/dev/null || true
 chmod 755 "${SCRIPT_DIR}/add-repo.sh" "${SCRIPT_DIR}/install.sh" "${SCRIPT_DIR}/setup.sh" "${SCRIPT_DIR}/iso-builder/build-iso.sh" 2>/dev/null || true

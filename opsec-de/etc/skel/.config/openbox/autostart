@@ -1,0 +1,46 @@
+# opsecDE autostart — wallpaper, compositor, dock, panel, monitor, notifications.
+#
+# Started by openbox at session start (opsec-session execs openbox).
+
+# Desktop icons + wallpaper (pcmanfm desktop mode; feh as fallback)
+if command -v pcmanfm >/dev/null 2>&1; then
+    pcmanfm --desktop --profile opsec 2>/dev/null &
+elif command -v feh >/dev/null 2>&1; then
+    (sleep 1; feh --no-fehbg --bg-fill /usr/share/opsec/wallpaper.png) &
+fi
+
+# Compositor (shadows + transparency)
+if command -v picom >/dev/null 2>&1; then
+    picom --config "${XDG_CONFIG_HOME:-$HOME/.config}/picom/picom.conf" -b 2>/dev/null &
+fi
+
+# Notification daemon
+if command -v dunst >/dev/null 2>&1; then
+    dunst -config "${XDG_CONFIG_HOME:-$HOME/.config}/dunst/dunstrc" 2>/dev/null &
+fi
+
+# Dock
+if command -v plank >/dev/null 2>&1; then
+    plank 2>/dev/null &
+fi
+
+# Top status panel
+if command -v opsec-panel >/dev/null 2>&1; then
+    opsec-panel 2>/dev/null &
+fi
+
+# System monitor widget
+if command -v conky >/dev/null 2>&1; then
+    (sleep 2; conky -c "${XDG_CONFIG_HOME:-$HOME/.config}/conky/opsec.conf" -d 2>/dev/null) &
+fi
+
+# Cursor theme
+if command -v xsetroot >/dev/null 2>&1; then
+    xsetroot -cursor_name left_ptr 2>/dev/null || true
+fi
+
+# Welcome notification
+if command -v notify-send >/dev/null 2>&1; then
+    (sleep 4; notify-send -i security-high "Welcome to opsecOS" \
+        "Privacy-first desktop ready. Press Super+Space for apps, Super+C for the control center.") 2>/dev/null &
+fi

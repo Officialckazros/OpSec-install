@@ -10,13 +10,13 @@ else
     echo "[-] Mullvad VPN: Not found"
 fi
 
-if [ -f "/usr/bin/mullvad-browser" ] || command -v mullvad-browser >/dev/null 2>&1; then
+if command -v mullvad-browser >/dev/null 2>&1 || [ -x /usr/bin/mullvad-browser ]; then
     echo "[+] Mullvad Browser: Installed (/usr/bin/mullvad-browser)"
 else
     echo "[-] Mullvad Browser: Not found"
 fi
 
-if command -v proton-mail >/dev/null 2>&1 || [ -f "/usr/bin/proton-mail" ]; then
+if command -v proton-mail >/dev/null 2>&1 || command -v protonmail >/dev/null 2>&1; then
     echo "[+] Proton Mail: Installed"
 else
     echo "[-] Proton Mail: Not found"

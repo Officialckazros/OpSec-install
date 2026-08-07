@@ -16,10 +16,26 @@ Or use [Balena Etcher](https://etcher.balena.io/) for a graphical tool.
 
 **Default credentials:** user / live
 
+> **Note on testing:** the desktop features below (dock, control center, app
+> launchers, firewall/MAC controls) were validated in the **live ISO**
+> environment rather than a full install to disk, because earlier builds had no
+> installer. That is fixed now — the ISO ships a **full graphical installer**
+> ("Install opsecOS" on the desktop / dock), so you can install to disk and the
+> same opsecDE experience is carried over.
+
+### Install to disk (full GUI)
+
+Boot the ISO and click **"Install opsecOS"** on the desktop (or the dock/panel).
+The complete Debian GTK installer launches — pick your language, disk layout,
+user account and password. When it finishes, the opsec suite (`opsec`,
+`opsec-de`) is installed automatically into the new system.
+
 ### What's Inside
 
 - Debian 13 (Trixie) base with live-boot
-- opsecDE desktop environment (Openbox, opsec-panel, opsec-control-center)
+- opsecDE desktop environment (Openbox + opsec-panel + opsec-control-center)
+- **Plank dock** with pinned launchers (browser, mail, terminal, files, …)
+- **Conky** live system monitor and **Dunst** notifications ("alive" desktop)
 - Mullvad VPN (auto-configured repository)
 - Mullvad Browser (privacy-focused web browser)
 - Proton Mail (desktop client)
@@ -27,6 +43,10 @@ Or use [Balena Etcher](https://etcher.balena.io/) for a graphical tool.
 - UFW firewall (deny incoming, allow VPN ports)
 - MAC address randomization on boot
 - Auto-login to opsecDE session
+- Pre-installed **debugging & security tools**: `gdb`, `strace`, `ltrace`,
+  `htop`, `btop`, `nmap`, `tcpdump`, `wireshark`, `nikto`, `hydra`, `sqlmap`,
+  `netcat`, `socat`, `dnsutils`, `whois`, `git`, `vim`, `ripgrep`, `jq`, `tmux`,
+  and more.
 
 ## Included Software Suite
 
@@ -39,8 +59,11 @@ Or use [Balena Etcher](https://etcher.balena.io/) for a graphical tool.
 `opsecDE` is a custom Linux Desktop Environment designed specifically for operational security:
 
 - **opsec-session**: Custom X11 session launcher registered in `/usr/share/xsessions/opsecde.desktop`.
-- **opsec-panel**: Top desktop status bar featuring real-time Mullvad VPN indicator, strict firewall shield indicator, launcher shortcuts, and resource monitor.
-- **opsec-control-center**: Graphical security control dashboard for managing VPN connections, randomizing MAC addresses, and enforcing strict lockdown rules.
+- **opsec-panel**: Top desktop status bar featuring real-time Mullvad VPN indicator, strict firewall shield indicator, launcher shortcuts, and an "Install opsecOS" button.
+- **opsec-control-center**: Graphical security control dashboard for managing VPN connections, randomizing MAC addresses, enforcing strict lockdown rules, launching apps and refreshing the software suite.
+- **Plank dock**: bottom dock with pinned launchers for the browser, mail, terminal, file manager, status scan and installer.
+- **Conky + Dunst + welcome notification**: live system monitor, notification daemon and a first-login greeting to make the desktop feel alive.
+- **Wallpaper**: custom dark privacy-themed wallpaper shipped in the package.
 
 ---
 

@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Mullvad Browser
+Comment=Privacy-focused web browser
+Exec=/usr/bin/opsec-launch mullvad-browser %U
+Icon=web-browser
+Terminal=false
+Categories=Network;WebBrowser;Security;
