@@ -1,23 +1,23 @@
 Architectures: all amd64
 Codename: opsec
-Date: Tue, 04 Aug 2026 14:51:41 +0000
+Date: Fri, 07 Aug 2026 02:16:57 +0000
 Description: OpSec APT repository
 Label: OpSec
 Origin: OpSec-install
 Suite: stable
 MD5Sum:
- e4b8da264a8e07348365ab29efbf3b47             2248 Packages
- 6b56ee00576d90516b08fbfae2d438aa             1111 Packages.gz
- 96798499308e861ae1da3cb412384678              162 Release
+ ef7676e73a362bcca8be0514a644a867             2769 Packages
+ d9b4b78d6c31ed2f153f39ed9c008676             1394 Packages.gz
+ a1feb145f5d48dd80d93c2dda727c017              162 Release
 SHA1:
- a07af7f220ffdd547f73a4a695b5a6281906f174             2248 Packages
- 3260a55849a4e712bb84fb027b243682e12e80e8             1111 Packages.gz
- df0100a37d3fb0735922509af4df1a59a400b4c4              162 Release
+ 3802be1f3d6932689fc6f4c093e9e74183a11c08             2769 Packages
+ 0ed5dc8422fc991dfd88ee34ac35cb33979b5d77             1394 Packages.gz
+ 68984dc54e6c112496695bc544ece6c03d609ada              162 Release
 SHA256:
- 18bc907fb93a6d43eeb76c360b56108cd6297ec1dd3654aeff873b4f33255761             2248 Packages
- 746e0bf55234ebfdff4058960c4477d05ff66d96501e67b4e77ab43dda5ee0e7             1111 Packages.gz
- 5762b62d707ad02ca9f5768289114f7bb9a78dd2868524d2793b9df31a235838              162 Release
+ 46d6463e436d63067c9b6a031393b841aebef3d71ef951698d8b6645eef8b140             2769 Packages
+ d7139ba8173e9c0fb7c3c62427bb8d7c1c19e2454bd377184c5f93a7f2bac86e             1394 Packages.gz
+ 1b687729e3eb03bd282567c97a124d85530be58326e474653e794265e75f785f              162 Release
 SHA512:
- 6935d8fd4e6c5289719a0362c4aa6a8389bae80a416daaa5686bb3dd5498982532162bb46814b72538ee4d7b16d54a0caaaa1e3837c74fc581dff0d64e6dba3b             2248 Packages
- 7c8273ead504f8cdd5e5a438f2afe46b3a46e43b283b0cea16bfd85de07bd4f183f44bed4508e707bfa7dae824baaf587d897c2455979c36c1a7f9433d38ee96             1111 Packages.gz
- 5a6920e864e430f561c2fe6bbec8ce0a09647b5ae4fc2125f1e43d1b51ed944d4b85427da2a4fdad09c1651f3a8b0090ad7fc7113fa8b017ac57b3f3e167a752              162 Release
+ be3dbfdb18eac42f5e27112b3dc9173c2cfbdaf7ca5831f1a3097e64256d66df0350bc51b6c547024cd91f1fbd11f0de64a5a4c4ad1f8767f77ed8e148668871             2769 Packages
+ 368e3b1dcd6b70fb56cd322e9e538921b21571dd09e896d2810da9c8f597f7e65d0c483190c104c154309f7961b6aeb5f816aab4ad30dbc3d00691b02884dccd             1394 Packages.gz
+ 2426ac453b6874f2be02abfb5202f985584e4ed234ae09b009e8a05e7c8b53f62a9bed1ad65f30e4c903760cce721068b95d028bfc37d978b0e4c62f0ae4f4e8              162 Release
